@@ -11,7 +11,6 @@ var (
 	ErrNoSuchUser      = errors.New("error: no such user")
 	ErrUserExist       = errors.New("error: user already exists")
 	ErrInvalidPassword = errors.New("error: invalid password")
-	ErrInvalidToken    = errors.New("error: invalid token")
 )
 
 type UserName string
