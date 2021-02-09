@@ -1,4 +1,4 @@
-package auth
+package plainauth
 
 import (
 	"crypto/sha256"
@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-var ErrNoSuchSession = errors.New("error: no such session")
+var (
+	ErrNoSuchSession = errors.New("error: no such session")
+	ErrInvalidToken  = errors.New("error: invalid token")
+)
 
 type SessionToken string
 

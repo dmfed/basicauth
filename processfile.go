@@ -1,4 +1,4 @@
-package auth
+package plainauth
 
 import (
 	"io/ioutil"
