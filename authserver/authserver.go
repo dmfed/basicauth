@@ -13,8 +13,9 @@ import (
 )
 
 // Request is a representation of JSON request to the server.
-// If sent with PUT will add new user. If sent with DEL will delete
-// user.
+// If sent with GET method will try to verify Username and Password.
+// With PUT will add new user. With POST will try to update password.
+// If sent with DEL will try to delete user.
 type Request struct {
 	Action      string            `json:"action"`
 	Username    auth.UserName     `json:"username,omitempty"`
@@ -75,6 +76,8 @@ func main() {
 		port          = flag.String("port", "8081", "port to listen on")
 		passwordsFile = flag.String("passwords", "", "password file to use")
 		tokenDuration = flag.Duration("duration", time.Hour, "max duration while new token is valid")
+		certFile      = flag.String("cert", "", "certificate file to use")
+		keyFile       = flag.String("key", "", "key file to use")
 	)
 	flag.Parse()
 	handler, err := newMainHandler(*passwordsFile, *tokenDuration)
@@ -92,5 +95,9 @@ func main() {
 		log.Printf("exiting on signal: %v", sig)
 		server.Close()
 	}()
-	log.Fatal(server.ListenAndServe())
+	if *certFile != "" && *keyFile != "" {
+		log.Fatal(server.ListenAndServeTLS(*certFile, *keyFile))
+	} else {
+		log.Fatal(server.ListenAndServe())
+	}
 }
