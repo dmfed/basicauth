@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	auth "github.com/dmfed/plainauth"
+	auth "github.com/dmfed/basicauth"
 )
 
 // Request is a representation of JSON request to the server.
@@ -25,9 +25,9 @@ type Request struct {
 
 // Response represents response from server
 type Response struct {
-	Ok    bool              `json:"ok"`
+	OK    bool              `json:"ok"`
 	Token auth.SessionToken `json:"token,omitempty"`
-	Error error             `json:"error"`
+	Error string            `json:"error"`
 }
 
 // MainHandler deals with all incoming requests
@@ -79,7 +79,7 @@ func main() {
 	flag.Parse()
 	handler, err := newMainHandler(*passwordsFile, *tokenDuration)
 	if err != nil {
-		log.Printf("error starting auth server: %v", err)
+		log.Printf("error starting auth server handler: %v", err)
 		return
 	}
 	server := &http.Server{Addr: *ipAddr + ":" + *port,

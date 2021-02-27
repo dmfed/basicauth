@@ -5,7 +5,9 @@ import (
 	"testing"
 )
 
-func Test_JSONPasswordHashesAndChecksOut(t *testing.T) {
+// Some very basic tests for now
+
+func Test_JSON_PasswordHashesAndChecksOut(t *testing.T) {
 	pk := new(JSONPasswordKeeper)
 	pk.userSecrets = make(map[UserName]Secret)
 	user, password := UserName("dmitry"), Password("hello")
@@ -20,7 +22,7 @@ func Test_JSONPasswordHashesAndChecksOut(t *testing.T) {
 	}
 }
 
-func Test_JSONPasswordKeeperAddsAndDeletesUser(t *testing.T) {
+func Test_JSON_PasswordKeeperAddsAndDeletesUser(t *testing.T) {
 	pk := new(JSONPasswordKeeper)
 	pk.userSecrets = make(map[UserName]Secret)
 	user, password := UserName("dmitry"), Password("hello")

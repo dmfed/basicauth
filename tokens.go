@@ -2,19 +2,13 @@ package basicauth
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 )
 
-var (
-	ErrNoSuchSession     = errors.New("error: no such session")
-	ErrInvalidToken      = errors.New("error: invalid token")
-	ErrIncorrectDuration = errors.New("error: token duration invalid")
-)
-
 // MemSessionTokenKeeper is an in-memory storage of session tokens
+// it implements TokenKeeper interface
 type MemSessionTokenKeeper struct {
 	userTokens  map[UserName]SessionToken
 	maxduration time.Duration

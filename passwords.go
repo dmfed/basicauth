@@ -2,21 +2,15 @@ package basicauth
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	ErrNoSuchUser      = errors.New("error: no such user")
-	ErrUserExist       = errors.New("error: user already exists")
-	ErrInvalidPassword = errors.New("error: invalid password")
-)
-
 // JSONPasswordKeeper holds user password hashes in memory
 // and saves them to disk on call to Close()
+// it implements PAsswordKeeper interface
 type JSONPasswordKeeper struct {
 	userSecrets  map[UserName]Secret
 	filename     string
@@ -75,9 +69,12 @@ func (pk *JSONPasswordKeeper) AddUser(user UserName, password Password) error {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
 	if _, exists := pk.userSecrets[user]; exists {
-		return ErrUserExist
+		return ErrUserExists
 	}
-	hashbytes, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
+	hashbytes, err := bcrypt.GenerateFromPassword([]byte(password), 0)
+	if err != nil {
+		return ErrFailedToEncrypt
+	}
 	secret := Secret(hashbytes)
 	pk.userSecrets[user] = secret
 	pk.stateChanged = true
@@ -99,6 +96,9 @@ func (pk *JSONPasswordKeeper) DelUser(user UserName, password Password) error {
 // ChangeUserPassword changes hash of password stored. Note that this requires both
 // existing (old) and new password.
 func (pk *JSONPasswordKeeper) ChangeUserPassword(user UserName, oldpassword, newpassword Password) error {
+	if oldpassword == newpassword {
+		return ErrSamePassword
+	}
 	if err := pk.CheckUserPassword(user, oldpassword); err == nil {
 		pk.mutex.Lock()
 		defer pk.mutex.Unlock()
@@ -108,7 +108,7 @@ func (pk *JSONPasswordKeeper) ChangeUserPassword(user UserName, oldpassword, new
 		pk.stateChanged = true
 		return nil
 	}
-	return ErrNoSuchUser
+	return ErrInvalidPassword
 }
 
 // Close writes all user passwords back to file.

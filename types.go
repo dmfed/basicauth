@@ -1,5 +1,19 @@
 package basicauth
 
+import (
+	"errors"
+)
+
+var (
+	ErrNoSuchUser      = errors.New("error: no such user")
+	ErrUserExists      = errors.New("error: user already exists")
+	ErrInvalidPassword = errors.New("error: password does not check out with stored value")
+	ErrFailedToEncrypt = errors.New("error: could not hash provided password")
+	ErrSamePassword    = errors.New("error: old password and new password must not match")
+	ErrNoSuchSession   = errors.New("error: user is not logged in")
+	ErrInvalidToken    = errors.New("error: invalid token")
+)
+
 // UserName type represents a user name
 type UserName string
 
@@ -13,6 +27,14 @@ type Password string
 // SessionToken represents a session token issued
 // by SessionKeeper
 type SessionToken string
+
+/* // User to use later to prevent guessing password
+type User struct {
+	UserName            UserName
+	FailedLoginAttempts int
+	Lastlogin           time.Time
+	PasswordHint        string
+} */
 
 // PasswordKeeper is an interface to whatever password storage
 // facility we have.
