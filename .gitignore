@@ -1,1 +1,3 @@
 plainauthserver/plainauthserver
+client/authadmin/authadmin
+server/cmd/cmd

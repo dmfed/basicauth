@@ -5,13 +5,13 @@ import (
 )
 
 var (
-	ErrNoSuchUser      = errors.New("error: no such user")
-	ErrUserExists      = errors.New("error: user already exists")
-	ErrInvalidPassword = errors.New("error: password does not check out with stored value")
-	ErrFailedToEncrypt = errors.New("error: could not hash provided password")
-	ErrSamePassword    = errors.New("error: old password and new password must not match")
-	ErrNoSuchSession   = errors.New("error: user is not logged in")
-	ErrInvalidToken    = errors.New("error: invalid token")
+	ErrNoSuchUser      = errors.New("auth error: no such user")
+	ErrUserExists      = errors.New("auth error: user already exists")
+	ErrInvalidPassword = errors.New("auth error: password does not check out with stored value")
+	ErrFailedToEncrypt = errors.New("auth error: could not hash provided password")
+	ErrSamePassword    = errors.New("auth error: old password and new password must not match")
+	ErrNoSuchSession   = errors.New("auth error: user is not logged in")
+	ErrInvalidToken    = errors.New("auth error: invalid token")
 )
 
 // UserName type represents a user name
@@ -51,6 +51,36 @@ type PasswordKeeper interface {
 type TokenKeeper interface {
 	GenerateToken(UserName) (SessionToken, error)
 	CheckToken(UserName, SessionToken) error
-	DeleteUserSession(UserName) error
+	DeleteUserToken(UserName) error
 	Close() error
 }
+
+// Authenticator is a combined intearface which has both
+// passwords keeper and tokens keeper functionality
+type Authenticator interface {
+	PasswordKeeper
+	TokenKeeper
+}
+
+/* // Request is a representation of JSON request to the server.
+// If sent with GET method will try to verify Username and Password.
+// With PUT will add new user. With POST will try to update password.
+// If sent with DEL will try to delete user.
+type Request struct {
+	// Action should be one of: "adduser", "deluser",
+	// "checkpassword", "changeuserpassword", "generatetoken",
+	// "checktoken", "deleteusersession"
+	Action      string       `json:"action"`
+	Username    UserName     `json:"username"`
+	Password    Password     `json:"password,omitempty"`
+	OldPassword Password     `json:"oldpassword,omitempty"`
+	Token       SessionToken `json:"token,omitempty"`
+}
+
+// Response represents response from server
+type Response struct {
+	OK    bool         `json:"ok"`
+	Token SessionToken `json:"token,omitempty"`
+	Error string       `json:"error"`
+}
+*/
