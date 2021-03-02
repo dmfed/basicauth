@@ -1,13 +1,24 @@
-package memtokens
+package tokens
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
-
-	"github.com/dmfed/basicauth"
 )
+
+var (
+	ErrNoSuchSession = errors.New("auth error: user is not logged in")
+	ErrInvalidToken  = errors.New("auth error: invalid token")
+)
+
+// TokenKeeper is an interface to whatever token storage we have
+type TokenKeeper interface {
+	GenerateToken(username string) (token string, err error)
+	CheckToken(username string, token string) error
+	DeleteUserToken(username string) error
+}
 
 // MemSessionTokenKeeper is an in-memory storage of session tokens
 // it implements TokenKeeper interface
@@ -18,7 +29,7 @@ type MemSessionTokenKeeper struct {
 }
 
 // NewMemSessionTokenKeeper creates new in-memory token keeper
-func NewMemSessionTokenKeeper(maxduration time.Duration) (basicauth.TokenKeeper, error) {
+func NewMemSessionTokenKeeper(maxduration time.Duration) (TokenKeeper, error) {
 	var tk MemSessionTokenKeeper
 	tk.userTokens = make(map[string]string)
 	tk.maxduration = maxduration
@@ -51,11 +62,11 @@ func (tk *MemSessionTokenKeeper) CheckToken(username string, token string) (err 
 	defer tk.mutex.Unlock()
 	validToken, ok := tk.userTokens[username]
 	if !ok {
-		err = basicauth.ErrNoSuchSession
+		err = ErrNoSuchSession
 		return
 	}
 	if validToken != token {
-		err = basicauth.ErrInvalidToken
+		err = ErrInvalidToken
 	}
 	return
 }
@@ -68,7 +79,7 @@ func (tk *MemSessionTokenKeeper) DeleteUserToken(user string) error {
 		delete(tk.userTokens, user)
 		return nil
 	}
-	return basicauth.ErrNoSuchSession
+	return ErrNoSuchSession
 }
 
 // destroys all tokens on call.

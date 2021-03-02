@@ -2,11 +2,17 @@ package jsonstorage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
 
 	"github.com/dmfed/basicauth"
+)
+
+var (
+	ErrNoSuchUser = errors.New("auth error: no such user")
+	ErrUserExists = errors.New("auth error: user already exists")
 )
 
 // JSONPasswordKeeper holds user password hashes in memory
@@ -21,7 +27,7 @@ type JSONPasswordKeeper struct {
 // OpenJSONPasswordKeeper accepts a filename containig usernames and password
 // hashes and returns in stance of JSONPasswordKeeper. Function returns an underlying
 // error if it fails to read from file or fails to Unmarshal its contents.
-func OpenJSONPasswordKeeper(filename string) (basicauth.UserInfoStorage, error) {
+func OpenJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return NewJSONPasswordKeeper(filename)
 	}
@@ -41,7 +47,7 @@ func OpenJSONPasswordKeeper(filename string) (basicauth.UserInfoStorage, error) 
 // NewJSONPasswordKeeper creates a new keeper and tries to save to disk.
 // Will return underlying error if it fails to Close() (write to designated file)
 // properly.
-func NewJSONPasswordKeeper(filename string) (basicauth.UserInfoStorage, error) {
+func NewJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 	if _, err := os.Stat(filename); err == nil {
 		return nil, fmt.Errorf("error: file %v already exists", filename)
 	}
@@ -56,7 +62,7 @@ func (pk *JSONPasswordKeeper) Put(userinfo basicauth.UserInfo) error {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
 	if _, exists := pk.userInfo[userinfo.UserName]; exists {
-		return basicauth.ErrUserExists
+		return ErrUserExists
 	}
 	pk.userInfo[userinfo.UserName] = userinfo
 	return pk.flushToDisk()
@@ -68,7 +74,7 @@ func (pk *JSONPasswordKeeper) Get(username string) (basicauth.UserInfo, error) {
 	defer pk.mutex.Unlock()
 	userinfo, exists := pk.userInfo[username]
 	if !exists {
-		return basicauth.UserInfo{}, basicauth.ErrNoSuchUser
+		return basicauth.UserInfo{}, ErrNoSuchUser
 	}
 	return userinfo, nil
 }
@@ -81,7 +87,7 @@ func (pk *JSONPasswordKeeper) Del(username string) error {
 		delete(pk.userInfo, username)
 		return pk.flushToDisk()
 	}
-	return basicauth.ErrNoSuchUser
+	return ErrNoSuchUser
 }
 
 func (pk *JSONPasswordKeeper) flushToDisk() error {

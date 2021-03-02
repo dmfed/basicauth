@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/dmfed/basicauth"
+	"github.com/dmfed/basicauth/tokens"
 )
 
 // New creates instance of http/https server which accepts incoming connections on specified
 // ip and port. The server can be lauched with ListenAndServe() or ListenAndServeTLS() methods
 // It is callers responsibility to gracefully shutdown server with Shutdown() not Close()
 // in order to disconnect from password keeper gracefully
-func New(ip, port string, pk basicauth.UserManager, tk basicauth.TokenKeeper) (*http.Server, error) {
+func New(ip, port string, pk basicauth.ExposedInterface, tk tokens.TokenKeeper) (*http.Server, error) {
 	var handler HTTPHandler
 	handler.PasswordKeeper = pk
 	handler.TokenKeeper = tk
