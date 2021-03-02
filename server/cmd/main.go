@@ -8,6 +8,7 @@ import (
 
 	"github.com/dmfed/basicauth/jsonstorage"
 	"github.com/dmfed/basicauth/server"
+	"github.com/dmfed/basicauth/tokens"
 )
 
 const tokenEnvVar = "BASIC_AUTH_TOKEN"
@@ -28,7 +29,7 @@ func main() {
 		log.Printf("error opening passwors storage: %v", err)
 		return
 	}
-	tokkeeper, err := jsonstorage.NewMemSessionTokenKeeper(*flagTokenDuration)
+	tokkeeper, err := tokens.NewMemSessionTokenKeeper(*flagTokenDuration)
 	if err != nil {
 		log.Printf("error opening token keeper: %v", err)
 	}

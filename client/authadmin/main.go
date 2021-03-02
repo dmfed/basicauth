@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
@@ -31,9 +30,8 @@ func main() {
 		}
 	}
 
-	auth, err := client.New(*flagIPAddr, *flagPort, *flagMasterToken, *flagRequireSecure)
+	_, err := client.New(*flagIPAddr, *flagPort, *flagMasterToken, *flagRequireSecure)
 	if err != nil {
 		log.Printf("could not start auth client: %v", err)
 	}
-	fmt.Println(auth.Close())
 }

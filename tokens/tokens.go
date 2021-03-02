@@ -1,4 +1,4 @@
-package jsonstorage
+package memtokens
 
 import (
 	"crypto/sha256"
@@ -12,7 +12,7 @@ import (
 // MemSessionTokenKeeper is an in-memory storage of session tokens
 // it implements TokenKeeper interface
 type MemSessionTokenKeeper struct {
-	userTokens  map[basicauth.UserName]basicauth.SessionToken
+	userTokens  map[string]string
 	maxduration time.Duration
 	mutex       sync.Mutex
 }
@@ -20,36 +20,36 @@ type MemSessionTokenKeeper struct {
 // NewMemSessionTokenKeeper creates new in-memory token keeper
 func NewMemSessionTokenKeeper(maxduration time.Duration) (basicauth.TokenKeeper, error) {
 	var tk MemSessionTokenKeeper
-	tk.userTokens = make(map[basicauth.UserName]basicauth.SessionToken)
+	tk.userTokens = make(map[string]string)
 	tk.maxduration = maxduration
 	return &tk, nil
 }
 
 // GenerateToken issues a new token for user valid for specified duration
-func (tk *MemSessionTokenKeeper) GenerateToken(user basicauth.UserName) (token basicauth.SessionToken, err error) {
+func (tk *MemSessionTokenKeeper) GenerateToken(username string) (token string, err error) {
 	h := sha256.New()
-	h.Write([]byte(user))
+	h.Write([]byte(username))
 	h.Write([]byte(time.Now().String()))
-	token = basicauth.SessionToken(fmt.Sprintf("%x", h.Sum(nil)))
+	token = string(fmt.Sprintf("%x", h.Sum(nil)))
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()
-	tk.userTokens[user] = token
+	tk.userTokens[username] = token
 	go func() {
 		timer := time.NewTimer(tk.maxduration)
 		<-timer.C
 		tk.mutex.Lock()
 		defer tk.mutex.Unlock()
-		delete(tk.userTokens, user)
+		delete(tk.userTokens, username)
 	}()
 	return token, err
 }
 
 // CheckToken verifies token is valid. It returns nil if token is valid or an
 // error if token is invalid.
-func (tk *MemSessionTokenKeeper) CheckToken(user basicauth.UserName, token basicauth.SessionToken) (err error) {
+func (tk *MemSessionTokenKeeper) CheckToken(username string, token string) (err error) {
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()
-	validToken, ok := tk.userTokens[user]
+	validToken, ok := tk.userTokens[username]
 	if !ok {
 		err = basicauth.ErrNoSuchSession
 		return
@@ -61,7 +61,7 @@ func (tk *MemSessionTokenKeeper) CheckToken(user basicauth.UserName, token basic
 }
 
 // DeleteUserToken invalidates session token of a cpecified user.
-func (tk *MemSessionTokenKeeper) DeleteUserToken(user basicauth.UserName) error {
+func (tk *MemSessionTokenKeeper) DeleteUserToken(user string) error {
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()
 	if _, exists := tk.userTokens[user]; exists {
@@ -71,9 +71,9 @@ func (tk *MemSessionTokenKeeper) DeleteUserToken(user basicauth.UserName) error 
 	return basicauth.ErrNoSuchSession
 }
 
-// Close is here to comply with TokenKeeper interface
-// Tt destroys all tokens on call.
-func (tk *MemSessionTokenKeeper) Close() error {
-	tk.userTokens = make(map[basicauth.UserName]basicauth.SessionToken)
-	return nil
+// destroys all tokens on call.
+func (tk *MemSessionTokenKeeper) clear() {
+	tk.mutex.Lock()
+	defer tk.mutex.Unlock()
+	tk.userTokens = make(map[string]string)
 }

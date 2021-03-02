@@ -16,13 +16,12 @@ import (
 // ip and port. The server can be lauched with ListenAndServe() or ListenAndServeTLS() methods
 // It is callers responsibility to gracefully shutdown server with Shutdown() not Close()
 // in order to disconnect from password keeper gracefully
-func New(ip, port string, pk basicauth.PasswordKeeper, tk basicauth.TokenKeeper) (*http.Server, error) {
-	var handler basicauth.HTTPHandler
+func New(ip, port string, pk basicauth.UserManager, tk basicauth.TokenKeeper) (*http.Server, error) {
+	var handler HTTPHandler
 	handler.PasswordKeeper = pk
 	handler.TokenKeeper = tk
 	server := &http.Server{Addr: ip + ":" + port,
 		Handler: &handler}
-	server.RegisterOnShutdown(handler.Close)
 	// below lines are intended to handle case when there is
 	// nobody to call call server.Shutdown() to exit gracefully
 	interrupts := make(chan os.Signal, 1)
