@@ -18,6 +18,7 @@ type AdminInterface interface {
 // Admin is a struct to implement AdminInterface
 type admin struct {
 	UserInfoStorage
+	PasswordHasher
 }
 
 // NewAdmin creates instance of Admin and returns AdminInterface
@@ -25,7 +26,7 @@ func NewAdmin(st UserInfoStorage) (AdminInterface, error) {
 	if st == nil {
 		return nil, fmt.Errorf("error: storage is nil")
 	}
-	return &admin{st}, nil
+	return &admin{st, globalHasher}, nil
 }
 
 // AdminGetUserInfo returns stored UerInfo if available in the storage
@@ -38,7 +39,7 @@ func (ad *admin) AdminAddUser(username string, password string) error {
 	if _, err := ad.Get(username); err == nil {
 		return ErrUserExists
 	}
-	hash, err := globalHasher.HashPassword(password)
+	hash, err := ad.HashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func (ad *admin) AdminUpdateUserPassword(username, newpassword string) error {
 	if err != nil {
 		return err
 	}
-	newhash, err := globalHasher.HashPassword(newpassword)
+	newhash, err := ad.HashPassword(newpassword)
 	if err != nil {
 		return err
 	}

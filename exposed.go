@@ -25,14 +25,15 @@ type ExposedInterface interface {
 // Exposed holds ExposedInterface
 type exposed struct {
 	UserInfoStorage
+	PasswordHasher
 }
 
-// NewExposed creates instnce of Exposed
-func NewExposed(st UserInfoStorage) (ExposedInterface, error) {
+// NewExposedInterface creates instnce of Exposed
+func NewExposedInterface(st UserInfoStorage) (ExposedInterface, error) {
 	if st == nil {
 		return nil, fmt.Errorf("error: storage is nil")
 	}
-	return &exposed{st}, nil
+	return &exposed{st, globalHasher}, nil
 }
 
 // CheckUserPassword fetches UserInfo from underlying UserInfoStorage and uses
@@ -44,10 +45,11 @@ func (ex *exposed) CheckUserPassword(username string, password string) error {
 	if err != nil {
 		return err
 	}
-	if err := ex.checkUserPassword(userinfo.PasswordHash, password); err != nil {
+	if err := ex.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
 		return err
 	}
-	return nil
+	userinfo.Lastlogin = time.Now()
+	return ex.Update(userinfo)
 }
 
 // AddUser adds new UserInfo to underlying IserInfoStorage.
@@ -56,7 +58,7 @@ func (ex *exposed) AddUser(username string, password string) error {
 	if err == nil {
 		return ErrUserExists
 	}
-	hash, err := globalHasher.HashPassword(password)
+	hash, err := ex.HashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -77,7 +79,7 @@ func (ex *exposed) DelUser(username string, password string) error {
 	if err != nil {
 		return err
 	}
-	if err := ex.checkUserPassword(userinfo.PasswordHash, password); err != nil {
+	if err := ex.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
 		return err
 	}
 	return ex.Del(username)
@@ -93,21 +95,14 @@ func (ex *exposed) ChangeUserPassword(username string, oldpassword string, newpa
 	if err != nil {
 		return err
 	}
-	if err := ex.checkUserPassword(userinfo.PasswordHash, oldpassword); err != nil {
+	if err := ex.CheckUserPassword(userinfo.PasswordHash, oldpassword); err != nil {
 		return err
 	}
-	hash, err := globalHasher.HashPassword(newpassword)
+	hash, err := ex.HashPassword(newpassword)
 	if err != nil {
 		return err
 	}
 	userinfo.PasswordHash = hash
 	userinfo.DateChanged = time.Now()
 	return ex.Update(userinfo)
-}
-
-func (ex *exposed) checkUserPassword(hash string, password string) error {
-	if err := globalHasher.CheckUserPassword(hash, password); err != nil {
-		return ErrInvalidPassword
-	}
-	return nil
 }
