@@ -1,0 +1,11 @@
+{
+    "dmitry": {
+        "UserName": "dmitry",
+        "PasswordHash": "$2a$10$wYIH/05OiOOKOc5jEn4Ate7oHb6zZYbbjkz.2qmyBLUWglDoPf2/u",
+        "DateCreated": "2021-03-08T02:26:57.081387+03:00",
+        "DateChanged": "2021-03-08T02:26:57.081387+03:00",
+        "Lastlogin": "0001-01-01T00:00:00Z",
+        "FailedLoginAttempts": 0,
+        "MustChangePassword": false
+    }
+}

@@ -1,41 +1,71 @@
 package basicauth
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
+// AdminInterface defines methods to add, delete and update user info
+// it does not require user password to perform where possible.
 type AdminInterface interface {
 	AdminAddUser(username string, password string) error //Change to return random password
 	AdminDelUser(username string) error
 	AdminGetUserInfo(username string) (UserInfo, error)
 	AdminUpdateUserInfo(UserInfo) error
+	AdminUpdateUserPassword(username, newpassword string) error
 }
 
-type Admin struct {
-	Storage UserInfoStorage
+// Admin is a struct to implement AdminInterface
+type admin struct {
+	UserInfoStorage
 }
 
+// NewAdmin creates instance of Admin and returns AdminInterface
 func NewAdmin(st UserInfoStorage) (AdminInterface, error) {
 	if st == nil {
 		return nil, fmt.Errorf("error: storage is nil")
 	}
-	return &Admin{st}, nil
+	return &admin{st}, nil
 }
 
-func (ad *Admin) GetAdminInterface() AdminInterface {
-	return ad
+// AdminGetUserInfo returns stored UerInfo if available in the storage
+func (ad *admin) AdminGetUserInfo(username string) (UserInfo, error) {
+	return ad.Get(username)
 }
 
-func (ad *Admin) AdminGetUserInfo(username string) (UserInfo, error) {
-	return ad.Storage.Get(username)
+// AdminAddUser add new user (if storage allows )
+func (ad *admin) AdminAddUser(username string, password string) error {
+	if _, err := ad.Get(username); err == nil {
+		return ErrUserExists
+	}
+	hash, err := globalHasher.HashPassword(password)
+	if err != nil {
+		return err
+	}
+	t := time.Now()
+	return ad.Put(UserInfo{UserName: username, PasswordHash: hash, DateCreated: t, DateChanged: t}) // TODO
 }
 
-func (ad *Admin) AdminAddUser(username string, password string) error {
-	return ad.Storage.Put(UserInfo{}) // TODO
+// AdminDelUser deletes user
+func (ad *admin) AdminDelUser(username string) error {
+	return ad.Del(username)
 }
 
-func (ad *Admin) AdminDelUser(username string) error {
-	return ad.Storage.Del(username)
+// AdminUpdateUserInfo updates userinfo in underlying USerInfoStorage
+func (ad *admin) AdminUpdateUserInfo(userinfo UserInfo) error {
+	return ad.Update(userinfo)
 }
 
-func (ad *Admin) AdminUpdateUserInfo(userinfo UserInfo) error {
-	return ad.Storage.Update(userinfo)
+// AdminUpdateUserPassword updates user's password hash in underlying storage
+func (ad *admin) AdminUpdateUserPassword(username, newpassword string) error {
+	userinfo, err := ad.Get(username)
+	if err != nil {
+		return err
+	}
+	newhash, err := globalHasher.HashPassword(newpassword)
+	if err != nil {
+		return err
+	}
+	userinfo.PasswordHash = newhash
+	return ad.Update(userinfo)
 }

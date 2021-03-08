@@ -17,7 +17,7 @@ var (
 
 // JSONPasswordKeeper holds user password hashes in memory
 // and saves them to disk on call to Close()
-// it implements basicauth.PasswordKeeper interface
+// it implements basicauth.UserInfoStorage
 type JSONPasswordKeeper struct {
 	userInfo map[string]basicauth.UserInfo
 	filename string
@@ -27,7 +27,7 @@ type JSONPasswordKeeper struct {
 // OpenJSONPasswordKeeper accepts a filename containig usernames and password
 // hashes and returns in stance of JSONPasswordKeeper. Function returns an underlying
 // error if it fails to read from file or fails to Unmarshal its contents.
-func OpenJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
+func OpenJSONPasswordKeeper(filename string) (basicauth.UserInfoStorage, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return NewJSONPasswordKeeper(filename)
 	}
@@ -45,9 +45,12 @@ func OpenJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 }
 
 // NewJSONPasswordKeeper creates a new keeper and tries to save to disk.
-// Will return underlying error if it fails to Close() (write to designated file)
+// Will return underlying error if it fails to write to designated file)
 // properly.
-func NewJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
+func NewJSONPasswordKeeper(filename string) (basicauth.UserInfoStorage, error) {
+	if filename == "" {
+		return nil, fmt.Errorf("empty filename provided. will do nothing")
+	}
 	if _, err := os.Stat(filename); err == nil {
 		return nil, fmt.Errorf("error: file %v already exists", filename)
 	}
@@ -90,9 +93,22 @@ func (pk *JSONPasswordKeeper) Del(username string) error {
 	return ErrNoSuchUser
 }
 
-func (pk *JSONPasswordKeeper) flushToDisk() error {
+// Update finds if user with UserName as in supplied userinfo exists and
+// updates existing info for that user with supplied userinfo.
+func (pk *JSONPasswordKeeper) Update(userinfo basicauth.UserInfo) error {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
+	if _, ok := pk.userInfo[userinfo.UserName]; ok {
+		pk.userInfo[userinfo.UserName] = userinfo
+		return pk.flushToDisk()
+	}
+	return ErrNoSuchUser
+}
+
+func (pk *JSONPasswordKeeper) flushToDisk() error {
+	// This method is always called from functions which
+	// defer pk.mutex.Unlock() so no need to use mutex here,
+	// we're protected already.
 	data, err := json.MarshalIndent(pk.userInfo, "", "    ")
 	if err != nil {
 		return err
