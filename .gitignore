@@ -1,3 +1,4 @@
 plainauthserver/plainauthserver
 client/authadmin/authadmin
 server/cmd/cmd
+jsonstorage/admin/admin
