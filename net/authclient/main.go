@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -12,7 +13,7 @@ const tokenEnvVar = "BASICAUTH_TOKEN"
 
 func main() {
 	var (
-		flagIPAddr = flag.String("ip", "127.0.0.1", "ip address to listen on")
+		flagIPAddr = flag.String("ip", "127.0.0.1", "ip address to connect to")
 		flagPort   = flag.String("port", "8081", "port to listen on")
 		/* flagUserName      = flag.String("user", "", "username to operate with")
 		flagPassword      = flag.String("password", "", "password to operate with")
@@ -30,8 +31,9 @@ func main() {
 		}
 	}
 
-	_, err := net.NewClient(*flagIPAddr, *flagPort, *flagAppToken, *flagRequireSecure)
+	client, err := net.NewClient(*flagIPAddr, *flagPort, *flagAppToken, *flagRequireSecure)
 	if err != nil {
 		log.Printf("could not start auth client: %v", err)
 	}
+	fmt.Println(client.Login("dmitry", "hello"))
 }

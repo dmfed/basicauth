@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	ErrLoginManagerIsNil = errors.New("error creating server: LoginManager is nil")
+	ErrLoginManagerIsNil = errors.New("NewLoginServer: error creating server: LoginManager is nil")
 )
 
 // NewLoginServer creates instance of http/https server which accepts incoming connections on specified
@@ -26,16 +26,10 @@ func NewLoginServer(ip, port, apptoken string, lm basicauth.LoginManager) (*http
 	if lm == nil {
 		return nil, ErrLoginManagerIsNil
 	}
-
 	var loginhandler HTTPLoginHandler
 	loginhandler.apptoken = apptoken
 	loginhandler.lm = lm
-	http.Handle("/login", &loginhandler)
-
-	var adminhandler HTTPAdminHandler
-	http.Handle("/admin", &adminhandler)
-
-	server := &http.Server{Addr: ip + ":" + port} // no Handler provided, will use default mux
+	server := &http.Server{Addr: ip + ":" + port, Handler: &loginhandler}
 	// below lines are intended to handle case when there is
 	// nobody to call call server.Shutdown() to exit gracefully
 	interrupts := make(chan os.Signal, 1)
@@ -60,23 +54,27 @@ type HTTPLoginHandler struct {
 }
 
 func (h *HTTPLoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Println("ServeHTTP called!")
 	bodydata, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error reading request body: %v", err)
 		http.Error(w, "could not read request body", http.StatusNoContent)
 		return
 	}
+	log.Printf("server read:\n %v\n", string(bodydata))
 	var msg Message
 	if err := msg.FromBytes(bodydata); err != nil {
 		log.Printf("error unmarshalling message: %v", err)
 		http.Error(w, "could not parse request body", http.StatusNoContent)
 		return
 	}
+	log.Printf("server unmarshalled message:\n %v\n", msg)
 	if msg.AppToken != h.apptoken {
 		log.Printf("error: got invalid app token %v", msg.AppToken)
 		http.Error(w, "error: not authorised", 403)
 		return
 	}
+	log.Printf("server compared tokens:\n %v and %v \n", msg.AppToken, h.apptoken)
 	msg.Response = Response{}
 	switch msg.Request.Action {
 	case "login":
@@ -100,7 +98,9 @@ func (h *HTTPLoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		msg.Response.Token = msg.Request.Token
 		msg.Response.Error = err.Error()
 	case "adduser":
+		log.Println("got into switch")
 		token, err := h.lm.AddUser(msg.Request.UserName, msg.Request.Password)
+		log.Printf("Got token: %v, err: %v", token, err)
 		if err == nil {
 			msg.Response.OK = true
 		}
@@ -120,8 +120,8 @@ func (h *HTTPLoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		msg.Response.Token = token
 		msg.Response.Error = err.Error()
 	default:
-		msg.Response.OK = false
-		msg.Response.Error = "could not process Message"
+		http.NotFound(w, r)
+		return
 	}
 	msg.Request = Request{}
 	w.Header().Set("Content-Type", "application/json")

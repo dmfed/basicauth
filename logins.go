@@ -47,12 +47,15 @@ func (lm *loginmanager) CheckUserLoggedIn(username, token string) error {
 }
 
 func (lm *loginmanager) AddUser(username, password string) (token string, err error) {
-	return lm.AddUser(username, password)
+	if err = lm.ex.AddUser(username, password); err != nil {
+		return
+	}
+	return lm.tk.GenerateToken(username)
 }
 
 func (lm *loginmanager) DelUser(username, password string) error {
 	lm.tk.DeleteUserToken(username)
-	if err := lm.DelUser(username, password); err != nil {
+	if err := lm.ex.DelUser(username, password); err != nil {
 		return err
 	}
 	return nil

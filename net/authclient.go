@@ -14,84 +14,127 @@ var (
 	ErrConnectionFailed = errors.New("error: connection to server failed")
 )
 
-type AuthClient struct {
+type authClient struct {
 	ipAddr   string
 	appToken string
 	secure   bool
 }
 
 func NewClient(ip, port, apptoken string, secure bool) (basicauth.LoginManager, error) {
-	var ac AuthClient
-	ac.ipAddr = ip + ":" + port
+	var ac authClient
+	ac.ipAddr = "http://" + ip + ":" + port
 	ac.appToken = apptoken
 	ac.secure = secure
-	return nil, nil
+	return &ac, nil
 }
 
-func (ac *AuthClient) Login(username, password string) (token string, err error) {
+func (ac *authClient) Login(username, password string) (token string, err error) {
 	m := ac.messageTemplate()
 	m.Request.Action = "login"
 	m.Request.UserName = username
 	m.Request.Password = password
-	resp, err := http.Post(ac.ipAddr, "application/json", bytes.NewReader(m.ToBytes()))
+	m, err = ac.post(m)
 	if err != nil {
-		return "", ErrConnectionFailed
-	}
-	defer resp.Body.Close()
-	m = Message{}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	if err := m.FromBytes(data); err != nil {
 		return "", err
 	}
 	if !m.Response.OK {
-		return "", fmt.Errorf("server returned error: %s", m.Response.Error)
+		return "", fmt.Errorf("could not login user %v: %v", username, m.Response.Error)
 	}
 	return m.Response.Token, nil
 }
 
-func (ac *AuthClient) Logout(username string) error {
+func (ac *authClient) Logout(username string) error {
 	m := ac.messageTemplate()
 	m.Request.Action = "logout"
 	m.Request.UserName = username
+	m, err := ac.post(m)
+	if err != nil {
+		return err
+	}
+	if !m.Response.OK {
+		return fmt.Errorf("could not logout user %v: %v", username, m.Response.Error)
+	}
 	return nil
 }
 
-func (ac *AuthClient) CheckUserLoggedIn(username, token string) error {
+func (ac *authClient) CheckUserLoggedIn(username, token string) error {
 	m := ac.messageTemplate()
 	m.Request.Action = "checkuserloggedin"
 	m.Request.UserName = username
+	m.Request.Token = token
+	m, err := ac.post(m)
+	if err != nil {
+		return err
+	}
+	if !m.Response.OK {
+		return fmt.Errorf("error checking session for user %v: %v", username, m.Response.Error)
+	}
 	return nil
 }
 
-func (ac *AuthClient) AddUser(username, password string) (token string, err error) {
+func (ac *authClient) AddUser(username, password string) (token string, err error) {
 	m := ac.messageTemplate()
 	m.Request.Action = "adduser"
 	m.Request.UserName = username
 	m.Request.Password = password
-	return "", nil
+	m, err = ac.post(m)
+	if err != nil {
+		return "", err
+	}
+	if !m.Response.OK {
+		return "", fmt.Errorf("could not add user %v: %v", username, m.Response.Error)
+	}
+	return m.Response.Token, nil
 }
 
-func (ac *AuthClient) DelUser(username, password string) error {
+func (ac *authClient) DelUser(username, password string) error {
 	m := ac.messageTemplate()
 	m.Request.Action = "deluser"
 	m.Request.UserName = username
 	m.Request.Password = password
+	m, err := ac.post(m)
+	if err != nil {
+		return err
+	}
+	if !m.Response.OK {
+		return fmt.Errorf("could not delete user %v: %v", username, m.Response.Error)
+	}
 	return nil
 }
 
-func (ac *AuthClient) ChangeUserPassword(username, password, newpassword string) error {
+func (ac *authClient) ChangeUserPassword(username, password, newpassword string) (token string, err error) {
 	m := ac.messageTemplate()
 	m.Request.Action = "changeuserpassword"
 	m.Request.UserName = username
 	m.Request.Password = password
 	m.Request.NewPassword = newpassword
-	return nil
+	m, err = ac.post(m)
+	if err != nil {
+		return "", err
+	}
+	if !m.Response.OK {
+		return "", fmt.Errorf("could not change user password for %v: %v", username, m.Response.Error)
+	}
+	return m.Response.Token, nil
 }
 
-func (ac *AuthClient) messageTemplate() Message {
+func (ac *authClient) post(inpmessage Message) (m Message, err error) {
+	resp, err := http.Post(ac.ipAddr, "application/json", bytes.NewReader(inpmessage.ToBytes()))
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	if err = m.FromBytes(data); err != nil {
+		return
+	}
+	return
+}
+
+func (ac *authClient) messageTemplate() Message {
 	var m Message
 	m.AppToken = ac.appToken
 	m.Request.ID = "0000"

@@ -15,7 +15,7 @@ func main() {
 	var (
 		flagIPAddr        = flag.String("ip", "127.0.0.1", "ip address to listen on")
 		flagPort          = flag.String("port", "8081", "port to listen on")
-		flagPasswordsFile = flag.String("passwords", "", "password file to use")
+		flagPasswordsFile = flag.String("f", "", "password file to use")
 		// flagTokenDuration = flag.Duration("duration", time.Hour, "max duration while token is valid")
 		flagCertFile = flag.String("cert", "", "certificate file to use")
 		flagKeyFile  = flag.String("key", "", "key file to use")
