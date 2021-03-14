@@ -10,7 +10,9 @@ import (
 )
 
 var (
+	// ErrNoSuchUser is returned if no user is found
 	ErrNoSuchUser = errors.New("auth error: no such user")
+	// ErrUserExists is returned when trying to add user with existing username
 	ErrUserExists = errors.New("auth error: user already exists")
 )
 
@@ -38,7 +40,7 @@ type UserInfoStorage interface {
 	Get(username string) (UserInfo, error)
 	Put(UserInfo) error
 	Del(username string) error
-	Update(UserInfo) error
+	Upd(UserInfo) error
 }
 
 // JSONPasswordKeeper holds user password hashes in memory
@@ -53,7 +55,7 @@ type JSONPasswordKeeper struct {
 // OpenJSONPasswordKeeper accepts a filename containig usernames and password
 // hashes and returns in stance of JSONPasswordKeeper. Function returns an underlying
 // error if it fails to read from file or fails to Unmarshal its contents.
-func OpenJSONPasswordKeeper(filename string) (UserInfoStorage, error) {
+func OpenJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return NewJSONPasswordKeeper(filename)
 	}
@@ -73,7 +75,7 @@ func OpenJSONPasswordKeeper(filename string) (UserInfoStorage, error) {
 // NewJSONPasswordKeeper creates a new keeper and tries to save to disk.
 // Will return underlying error if it fails to write to designated file)
 // properly.
-func NewJSONPasswordKeeper(filename string) (UserInfoStorage, error) {
+func NewJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 	if filename == "" {
 		return nil, fmt.Errorf("empty filename provided. will do nothing")
 	}
@@ -119,9 +121,9 @@ func (pk *JSONPasswordKeeper) Del(username string) error {
 	return ErrNoSuchUser
 }
 
-// Update finds if user with UserName as in supplied userinfo exists and
+// Upd finds if user with UserName as in supplied userinfo exists and
 // updates existing info for that user with supplied userinfo.
-func (pk *JSONPasswordKeeper) Update(userinfo UserInfo) error {
+func (pk *JSONPasswordKeeper) Upd(userinfo UserInfo) error {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
 	if _, ok := pk.userInfo[userinfo.UserName]; ok {

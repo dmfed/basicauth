@@ -11,6 +11,8 @@ var (
 	ErrInvalidPassword = errors.New("auth error: password does not check out with stored value")
 	// ErrSamePassword is returned when trying to replace user password with the same password
 	ErrSamePassword = errors.New("auth error: old password and new password must not match")
+	// ErrMustChangePassword is returned when newly created user tries to login with default pass
+	ErrMustChangePassword = fmt.Errorf("default password \"%v\" is set for user. change password to be able to login. use \"%v\" as current password", defaultPassword, defaultPassword)
 )
 
 // ExposedInterface is an interface intended to be exposed to outside world
@@ -24,8 +26,8 @@ type ExposedInterface interface {
 
 // Exposed holds ExposedInterface
 type exposed struct {
-	UserInfoStorage
-	PasswordHasher
+	st  UserInfoStorage
+	hsr PasswordHasher
 }
 
 // NewExposedInterface creates instnce of Exposed
@@ -41,24 +43,27 @@ func NewExposedInterface(st UserInfoStorage) (ExposedInterface, error) {
 // Returns nil is password checks out else error.
 // If fetch from starage fails returns underlying error.
 func (ex *exposed) CheckUserPassword(username string, password string) error {
-	userinfo, err := ex.Get(username)
+	userinfo, err := ex.st.Get(username)
 	if err != nil {
 		return err
 	}
-	if err := ex.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
+	if userinfo.MustChangePassword {
+		return ErrMustChangePassword
+	}
+	if err := ex.hsr.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
 		return err
 	}
 	userinfo.Lastlogin = time.Now()
-	return ex.Update(userinfo)
+	return ex.st.Upd(userinfo)
 }
 
 // AddUser adds new UserInfo to underlying IserInfoStorage.
 func (ex *exposed) AddUser(username string, password string) error {
-	_, err := ex.Get(username)
+	_, err := ex.st.Get(username)
 	if err == nil {
 		return ErrUserExists
 	}
-	hash, err := ex.HashPassword(password)
+	hash, err := ex.hsr.HashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -69,20 +74,20 @@ func (ex *exposed) AddUser(username string, password string) error {
 	userinfo.DateCreated = t
 	userinfo.DateChanged = t
 	userinfo.FailedLoginAttempts = 0
-	return ex.Put(userinfo)
+	return ex.st.Put(userinfo)
 }
 
 // DelUser deletes UserInfo with UserName == username from underlying
 // UserInfoStorage.
 func (ex *exposed) DelUser(username string, password string) error {
-	userinfo, err := ex.Get(username)
+	userinfo, err := ex.st.Get(username)
 	if err != nil {
 		return err
 	}
-	if err := ex.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
+	if err := ex.hsr.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
 		return err
 	}
-	return ex.Del(username)
+	return ex.st.Del(username)
 }
 
 // ChangeUserPassword fetches UserInfo for username from storage, verifies user current password,
@@ -91,18 +96,18 @@ func (ex *exposed) ChangeUserPassword(username string, oldpassword string, newpa
 	if oldpassword == newpassword {
 		return ErrSamePassword
 	}
-	userinfo, err := ex.Get(username)
+	userinfo, err := ex.st.Get(username)
 	if err != nil {
 		return err
 	}
-	if err := ex.CheckUserPassword(userinfo.PasswordHash, oldpassword); err != nil {
+	if err := ex.hsr.CheckUserPassword(userinfo.PasswordHash, oldpassword); err != nil {
 		return err
 	}
-	hash, err := ex.HashPassword(newpassword)
+	hash, err := ex.hsr.HashPassword(newpassword)
 	if err != nil {
 		return err
 	}
 	userinfo.PasswordHash = hash
 	userinfo.DateChanged = time.Now()
-	return ex.Update(userinfo)
+	return ex.st.Upd(userinfo)
 }

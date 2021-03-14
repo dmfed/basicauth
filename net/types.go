@@ -2,31 +2,36 @@ package net
 
 import (
 	"encoding/json"
+
+	"github.com/dmfed/basicauth"
 )
 
 // Request represents request to auth server
 type Request struct {
-	ID          string
-	Action      string
-	Token       string
-	UserName    string
-	Password    string
-	NewPassword string
+	ID          string             `json:",omitempty"`
+	Action      string             `json:",omitempty"`
+	Token       string             `json:",omitempty"`
+	UserName    string             `json:",omitempty"`
+	Password    string             `json:",omitempty"`
+	NewPassword string             `json:",omitempty"`
+	UserInfo    basicauth.UserInfo `json:",omitempty"`
 }
 
 // Response represents response of auth server
 type Response struct {
-	ID    string
-	OK    bool
-	Error string
-	Token string
+	ID       string             `json:",omitempty"`
+	OK       bool               `json:",omitempty"`
+	Error    string             `json:",omitempty"`
+	Token    string             `json:",omitempty"`
+	UserInfo basicauth.UserInfo `json:",omitempty"`
 }
 
 // Message type is a basic transfer unit for Requests and Responses
 type Message struct {
-	AppToken string
-	Request  Request
-	Response Response
+	ID       string   `json:",omitempty"`
+	AppToken string   `json:",omitempty"`
+	Request  Request  `json:",omitempty"`
+	Response Response `json:",omitempty"`
 }
 
 // Bytes encodes Message to JSON and returns []byte which can be

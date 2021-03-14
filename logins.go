@@ -11,6 +11,7 @@ type LoginManager interface {
 	Login(username, password string) (token string, err error)
 	Logout(username string) error
 	CheckUserLoggedIn(username, token string) error
+	CheckUserPassword(username, password string) error
 	AddUser(username, password string) (token string, err error)
 	DelUser(username, password string) error
 	ChangeUserPassword(username, oldpassword, newpassword string) (token string, err error)
@@ -35,6 +36,9 @@ func (lm *loginmanager) Login(username, password string) (token string, err erro
 	if err = lm.ex.CheckUserPassword(username, password); err != nil {
 		return
 	}
+	if token, err := lm.tk.GetToken(username); err == nil {
+		return token, nil
+	}
 	return lm.tk.GenerateToken(username)
 }
 
@@ -44,6 +48,10 @@ func (lm *loginmanager) Logout(username string) error {
 
 func (lm *loginmanager) CheckUserLoggedIn(username, token string) error {
 	return lm.tk.CheckToken(username, token)
+}
+
+func (lm *loginmanager) CheckUserPassword(username, password string) error {
+	return lm.ex.CheckUserPassword(username, password)
 }
 
 func (lm *loginmanager) AddUser(username, password string) (token string, err error) {

@@ -11,7 +11,7 @@ var (
 	testInvalidUser = "jamie"
 	testHash        = "xxxxFFFFgggg$"
 	testUserInfo    = UserInfo{UserName: testUser, PasswordHash: testHash}
-	testFileName    = "test.json"
+	testFileName    = "test1234.json"
 )
 
 var sampleContent = []byte(fmt.Sprintf(`{
@@ -60,8 +60,8 @@ func Test_NewJSONPAsswordKeeper(t *testing.T) {
 		t.Fail()
 	}
 	uinfo.PasswordHash = "newhash"
-	if err = pk.Update(uinfo); err != nil {
-		fmt.Println("failed to Update() userinfo", err)
+	if err = pk.Upd(uinfo); err != nil {
+		fmt.Println("failed to Upd() userinfo", err)
 		t.Fail()
 	}
 	newuinfo, err := pk.Get(testUser)

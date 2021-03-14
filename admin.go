@@ -5,14 +5,16 @@ import (
 	"time"
 )
 
+var defaultPassword = "none"
+
 // AdminInterface defines methods to add, delete and update user info
 // it does not require user password to perform where possible.
 type AdminInterface interface {
-	AdminAddUser(username string, password string) error //Change to return random password
+	AdminAddUser(username string) error //Change to return random password
 	AdminDelUser(username string) error
 	AdminGetUserInfo(username string) (UserInfo, error)
 	AdminUpdateUserInfo(UserInfo) error
-	AdminUpdateUserPassword(username, newpassword string) error
+	AdminResetUserPassword(username string) error
 }
 
 // Admin is a struct to implement AdminInterface
@@ -35,16 +37,16 @@ func (ad *admin) AdminGetUserInfo(username string) (UserInfo, error) {
 }
 
 // AdminAddUser add new user (if storage allows )
-func (ad *admin) AdminAddUser(username string, password string) error {
+func (ad *admin) AdminAddUser(username string) error {
 	if _, err := ad.Get(username); err == nil {
 		return ErrUserExists
 	}
-	hash, err := ad.HashPassword(password)
+	hash, err := ad.HashPassword(defaultPassword)
 	if err != nil {
 		return err
 	}
 	t := time.Now()
-	return ad.Put(UserInfo{UserName: username, PasswordHash: hash, DateCreated: t, DateChanged: t}) // TODO
+	return ad.Put(UserInfo{UserName: username, PasswordHash: hash, DateCreated: t, DateChanged: t, MustChangePassword: true}) // TODO
 }
 
 // AdminDelUser deletes user
@@ -54,19 +56,24 @@ func (ad *admin) AdminDelUser(username string) error {
 
 // AdminUpdateUserInfo updates userinfo in underlying USerInfoStorage
 func (ad *admin) AdminUpdateUserInfo(userinfo UserInfo) error {
-	return ad.Update(userinfo)
+	existing, err := ad.Get(userinfo.UserName)
+	if err != nil {
+		return err
+	}
+	userinfo.PasswordHash = existing.PasswordHash
+	return ad.Upd(userinfo)
 }
 
 // AdminUpdateUserPassword updates user's password hash in underlying storage
-func (ad *admin) AdminUpdateUserPassword(username, newpassword string) error {
+func (ad *admin) AdminResetUserPassword(username string) error {
 	userinfo, err := ad.Get(username)
 	if err != nil {
 		return err
 	}
-	newhash, err := ad.HashPassword(newpassword)
+	newhash, err := ad.HashPassword(defaultPassword)
 	if err != nil {
 		return err
 	}
 	userinfo.PasswordHash = newhash
-	return ad.Update(userinfo)
+	return ad.Upd(userinfo)
 }

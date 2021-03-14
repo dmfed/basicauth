@@ -12,10 +12,10 @@ func main() {
 	var (
 		flagFilename = flag.String("f", "", "storage file to use")
 		flagNew      = flag.Bool("new", false, "create new storage and quit (requires filename)")
-		flagAdd      = flag.Bool("add", false, "add user record (requires user password to be supplied)")
-		flagDel      = flag.Bool("del", false, "delete user record")
-		flagUpdate   = flag.Bool("upd", false, "update user password (requires user password to be supplied)")
-		flagFind     = flag.Bool("find", false, "display user info in the storage")
+		flagAdd      = flag.Bool("adduser", false, "add user record")
+		flagDel      = flag.Bool("deluser", false, "delete user record")
+		flagUpdate   = flag.Bool("resetpwd", false, "reset user password")
+		flagFind     = flag.Bool("show", false, "display user info in the storage")
 		flagUsername = flag.String("u", "", "username to add/delete/update/find")
 		flagPassword = flag.String("p", "", "password of user (if required)")
 	)
@@ -60,7 +60,7 @@ func main() {
 
 	if *flagAdd && *flagUsername != "" && *flagPassword != "" {
 		fmt.Printf("Adding user: %v\n", *flagUsername)
-		if err := admin.AdminAddUser(*flagUsername, *flagPassword); err != nil {
+		if err := admin.AdminAddUser(*flagUsername); err != nil {
 			fmt.Println(err)
 			os.Exit(3)
 		}
@@ -69,7 +69,7 @@ func main() {
 	}
 
 	if *flagUpdate && *flagUsername != "" && *flagPassword != "" {
-		if err := admin.AdminUpdateUserPassword(*flagUsername, *flagPassword); err != nil {
+		if err := admin.AdminResetUserPassword(*flagUsername); err != nil {
 			fmt.Println(err)
 			os.Exit(3)
 		}

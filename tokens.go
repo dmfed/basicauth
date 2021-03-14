@@ -9,8 +9,10 @@ import (
 )
 
 var (
+	// ErrNoSuchSession is returned when user is not logged in
 	ErrNoSuchSession = errors.New("auth error: user is not logged in")
-	ErrInvalidToken  = errors.New("auth error: invalid token")
+	// ErrInvalidToken is returned when token does not check out
+	ErrInvalidToken = errors.New("auth error: invalid token")
 )
 
 // TokenKeeper is an interface to whatever token storage we have
@@ -18,6 +20,7 @@ type TokenKeeper interface {
 	GenerateToken(username string) (token string, err error)
 	CheckToken(username string, token string) error
 	DeleteUserToken(username string) error
+	GetToken(username string) (token string, err error)
 }
 
 // MemSessionTokenKeeper is an in-memory storage of session tokens
@@ -72,14 +75,23 @@ func (tk *memSessionTokenKeeper) CheckToken(username string, token string) (err 
 }
 
 // DeleteUserToken invalidates session token of a cpecified user.
-func (tk *memSessionTokenKeeper) DeleteUserToken(user string) error {
+func (tk *memSessionTokenKeeper) DeleteUserToken(username string) error {
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()
-	if _, exists := tk.userTokens[user]; exists {
-		delete(tk.userTokens, user)
+	if _, exists := tk.userTokens[username]; exists {
+		delete(tk.userTokens, username)
 		return nil
 	}
 	return ErrNoSuchSession
+}
+
+func (tk *memSessionTokenKeeper) GetToken(username string) (token string, err error) {
+	tk.mutex.Lock()
+	defer tk.mutex.Unlock()
+	if token, exists := tk.userTokens[username]; exists {
+		return token, nil
+	}
+	return "", ErrNoSuchSession
 }
 
 // Clear destroys all tokens on call.

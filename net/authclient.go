@@ -14,84 +14,80 @@ var (
 	ErrConnectionFailed = errors.New("error: connection to server failed")
 )
 
-type authClient struct {
-	ipAddr   string
-	appToken string
-	secure   bool
+type authAdmin struct {
+	ipAddr     string
+	adminToken string
+	secure     bool
 }
 
-func NewClient(ip, port, apptoken string, secure bool) (basicauth.LoginManager, error) {
-	var ac authClient
+func NewAdminClient(ip, port, admintoken string, secure bool) (basicauth.AdminInterface, error) {
+	var ac authAdmin
 	ac.ipAddr = "http://" + ip + ":" + port
-	ac.appToken = apptoken
+	ac.adminToken = admintoken
 	ac.secure = secure
 	return &ac, nil
 }
 
-func (ac *authClient) Login(username, password string) (token string, err error) {
+func (ac *authAdmin) AdminGetUserInfo(username string) (basicauth.UserInfo, error) {
 	m := ac.messageTemplate()
-	m.Request.Action = "login"
+	m.Request.Action = "admingetuserinfo"
 	m.Request.UserName = username
-	m.Request.Password = password
-	m, err = ac.post(m)
+	m, err := ac.post(m)
 	if err != nil {
-		return "", err
+		return m.Response.UserInfo, err
 	}
 	if !m.Response.OK {
-		return "", fmt.Errorf("could not login user %v: %v", username, m.Response.Error)
+		return m.Response.UserInfo, fmt.Errorf("could not get user info for user %v: %v", username, m.Response.Error)
 	}
-	return m.Response.Token, nil
+	return m.Response.UserInfo, nil
 }
 
-func (ac *authClient) Logout(username string) error {
+func (ac *authAdmin) AdminUpdateUserInfo(userinfo basicauth.UserInfo) error {
 	m := ac.messageTemplate()
-	m.Request.Action = "logout"
+	m.Request.Action = "adminupdateuserinfo"
+	m.Request.UserInfo = userinfo
+	m, err := ac.post(m)
+	if err != nil {
+		return err
+	}
+	if !m.Response.OK {
+		return fmt.Errorf("could not update user info for user %v: %v", userinfo.UserName, m.Response.Error)
+	}
+	return nil
+}
+
+func (ac *authAdmin) AdminResetUserPassword(username string) error {
+	m := ac.messageTemplate()
+	m.Request.Action = "adminresetuserinfo"
 	m.Request.UserName = username
 	m, err := ac.post(m)
 	if err != nil {
 		return err
 	}
 	if !m.Response.OK {
-		return fmt.Errorf("could not logout user %v: %v", username, m.Response.Error)
+		return fmt.Errorf("could not reset password for user %v: %v", username, m.Response.Error)
 	}
 	return nil
 }
 
-func (ac *authClient) CheckUserLoggedIn(username, token string) error {
+func (ac *authAdmin) AdminAddUser(username string) (err error) {
 	m := ac.messageTemplate()
-	m.Request.Action = "checkuserloggedin"
+	m.Request.Action = "adminadduser"
 	m.Request.UserName = username
-	m.Request.Token = token
-	m, err := ac.post(m)
+	m, err = ac.post(m)
 	if err != nil {
 		return err
 	}
 	if !m.Response.OK {
-		return fmt.Errorf("error checking session for user %v: %v", username, m.Response.Error)
+		return fmt.Errorf("could not add user %v: %v", username, m.Response.Error)
 	}
 	return nil
 }
 
-func (ac *authClient) AddUser(username, password string) (token string, err error) {
+func (ac *authAdmin) AdminDelUser(username string) error {
 	m := ac.messageTemplate()
-	m.Request.Action = "adduser"
+	m.Request.Action = "admindeluser"
 	m.Request.UserName = username
-	m.Request.Password = password
-	m, err = ac.post(m)
-	if err != nil {
-		return "", err
-	}
-	if !m.Response.OK {
-		return "", fmt.Errorf("could not add user %v: %v", username, m.Response.Error)
-	}
-	return m.Response.Token, nil
-}
-
-func (ac *authClient) DelUser(username, password string) error {
-	m := ac.messageTemplate()
-	m.Request.Action = "deluser"
-	m.Request.UserName = username
-	m.Request.Password = password
 	m, err := ac.post(m)
 	if err != nil {
 		return err
@@ -102,23 +98,7 @@ func (ac *authClient) DelUser(username, password string) error {
 	return nil
 }
 
-func (ac *authClient) ChangeUserPassword(username, password, newpassword string) (token string, err error) {
-	m := ac.messageTemplate()
-	m.Request.Action = "changeuserpassword"
-	m.Request.UserName = username
-	m.Request.Password = password
-	m.Request.NewPassword = newpassword
-	m, err = ac.post(m)
-	if err != nil {
-		return "", err
-	}
-	if !m.Response.OK {
-		return "", fmt.Errorf("could not change user password for %v: %v", username, m.Response.Error)
-	}
-	return m.Response.Token, nil
-}
-
-func (ac *authClient) post(inpmessage Message) (m Message, err error) {
+func (ac *authAdmin) post(inpmessage Message) (m Message, err error) {
 	resp, err := http.Post(ac.ipAddr, "application/json", bytes.NewReader(inpmessage.ToBytes()))
 	if err != nil {
 		return
@@ -134,9 +114,9 @@ func (ac *authClient) post(inpmessage Message) (m Message, err error) {
 	return
 }
 
-func (ac *authClient) messageTemplate() Message {
+func (ac *authAdmin) messageTemplate() Message {
 	var m Message
-	m.AppToken = ac.appToken
+	m.AppToken = ac.adminToken
 	m.Request.ID = "0000"
 	return m
 }
