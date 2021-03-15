@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/dmfed/basicauth"
 	"github.com/dmfed/basicauth/net"
+	"github.com/dmfed/basicauth/storage"
 )
 
 const tokenEnvVar = "BASICAUTH_TOKEN"
@@ -19,16 +19,16 @@ func main() {
 		// flagTokenDuration = flag.Duration("duration", time.Hour, "max duration while token is valid")
 		flagCertFile = flag.String("cert", "", "certificate file to use")
 		flagKeyFile  = flag.String("key", "", "key file to use")
-		flagAppToken = flag.String("token", "", "provide token via commandline")
+		flagAdminKey = flag.String("admintoken", "", "provide admin token via command line")
+		flagAppToken = flag.String("token", "", "provide token via command line")
 	)
 	flag.Parse()
-	storage, err := basicauth.OpenJSONPasswordKeeper(*flagPasswordsFile)
+
+	storage, err := storage.OpenJSONPasswordKeeper(*flagPasswordsFile)
 	if err != nil {
 		log.Printf("error opening passwords storage: %v", err)
 		return
 	}
-
-	logmgr, err := basicauth.NewLoginManager(storage)
 
 	if *flagAppToken == "" {
 		if envtoken, ok := os.LookupEnv(tokenEnvVar); ok {
@@ -38,15 +38,16 @@ func main() {
 		}
 	}
 
-	srv, err := net.NewLoginServer(*flagIPAddr, *flagPort, *flagAppToken, logmgr)
+	srv, err := net.NewLoginServer(storage, *flagIPAddr, *flagPort, *flagAdminKey, false, *flagAppToken)
 	if err != nil {
-		log.Printf("error starting auth server: %v", err)
+		log.Printf("error initializing auth server: %v", err)
+		return
 	}
 
 	if *flagCertFile != "" && *flagKeyFile != "" {
 		log.Fatal(srv.ListenAndServeTLS(*flagCertFile, *flagKeyFile))
 	} else {
-		log.Printf("WARNING: TLS IS DISABLED because no certificate and/or key provided. ")
+		log.Println("WARNING: TLS IS DISABLED because no certificate and/or key provided.")
 		log.Fatal(srv.ListenAndServe())
 	}
 }

@@ -17,10 +17,9 @@ var (
 
 // TokenKeeper is an interface to whatever token storage we have
 type TokenKeeper interface {
-	GenerateToken(username string) (token string, err error)
-	CheckToken(username string, token string) error
-	DeleteUserToken(username string) error
-	GetToken(username string) (token string, err error)
+	NewUserToken(username string) (token string, err error)
+	GetUserToken(username string) (token string, err error)
+	DelUserToken(username string) error
 }
 
 // MemSessionTokenKeeper is an in-memory storage of session tokens
@@ -32,15 +31,15 @@ type memSessionTokenKeeper struct {
 }
 
 // NewMemSessionTokenKeeper creates new in-memory token keeper
-func NewMemSessionTokenKeeper(maxduration time.Duration) (TokenKeeper, error) {
+func NewMemTokenKeeper(sessionduration time.Duration) (TokenKeeper, error) {
 	var tk memSessionTokenKeeper
 	tk.userTokens = make(map[string]string)
-	tk.maxduration = maxduration
+	tk.maxduration = sessionduration
 	return &tk, nil
 }
 
 // GenerateToken issues a new token for user valid for specified duration
-func (tk *memSessionTokenKeeper) GenerateToken(username string) (token string, err error) {
+func (tk *memSessionTokenKeeper) NewUserToken(username string) (token string, err error) {
 	h := sha256.New()
 	h.Write([]byte(username))
 	h.Write([]byte(time.Now().String()))
@@ -58,24 +57,8 @@ func (tk *memSessionTokenKeeper) GenerateToken(username string) (token string, e
 	return token, err
 }
 
-// CheckToken verifies token is valid. It returns nil if token is valid or an
-// error if token is invalid.
-func (tk *memSessionTokenKeeper) CheckToken(username string, token string) (err error) {
-	tk.mutex.Lock()
-	defer tk.mutex.Unlock()
-	validToken, ok := tk.userTokens[username]
-	if !ok {
-		err = ErrNoSuchSession
-		return
-	}
-	if validToken != token {
-		err = ErrInvalidToken
-	}
-	return
-}
-
 // DeleteUserToken invalidates session token of a cpecified user.
-func (tk *memSessionTokenKeeper) DeleteUserToken(username string) error {
+func (tk *memSessionTokenKeeper) DelUserToken(username string) error {
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()
 	if _, exists := tk.userTokens[username]; exists {
@@ -85,7 +68,7 @@ func (tk *memSessionTokenKeeper) DeleteUserToken(username string) error {
 	return ErrNoSuchSession
 }
 
-func (tk *memSessionTokenKeeper) GetToken(username string) (token string, err error) {
+func (tk *memSessionTokenKeeper) GetUserToken(username string) (token string, err error) {
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()
 	if token, exists := tk.userTokens[username]; exists {
@@ -94,7 +77,7 @@ func (tk *memSessionTokenKeeper) GetToken(username string) (token string, err er
 	return "", ErrNoSuchSession
 }
 
-// Clear destroys all tokens on call.
+// Clear destroys all tokens in single call.
 func (tk *memSessionTokenKeeper) Clear() {
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()

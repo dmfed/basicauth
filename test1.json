@@ -1,0 +1,20 @@
+{
+    "dmitry": {
+        "UserName": "dmitry",
+        "PasswordHash": "$2a$10$jnK6/pSgrbA0lw3qaAToQ.Z8RHC98dUb7/YAAEVVeuOyZU9s4yrUS",
+        "DateCreated": "2021-03-09T16:03:48.772093409+03:00",
+        "DateChanged": "2021-03-09T16:03:48.772093409+03:00",
+        "Lastlogin": "0001-01-01T00:00:00Z",
+        "FailedLoginAttempts": 0,
+        "MustChangePassword": false
+    },
+    "masha": {
+        "UserName": "masha",
+        "PasswordHash": "$2a$10$EQWHpk5EOCVfHrjxhFVUxOLQ54nSWJrsNPGmGz3vNVr8BkUUig4mS",
+        "DateCreated": "2021-03-09T16:03:49.091086349+03:00",
+        "DateChanged": "2021-03-09T16:03:49.091086349+03:00",
+        "Lastlogin": "0001-01-01T00:00:00Z",
+        "FailedLoginAttempts": 0,
+        "MustChangePassword": false
+    }
+}

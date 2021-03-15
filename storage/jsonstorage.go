@@ -1,4 +1,4 @@
-package basicauth
+package storage
 
 import (
 	"encoding/json"
@@ -6,48 +6,22 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
+
+	"github.com/dmfed/basicauth"
 )
 
 var (
 	// ErrNoSuchUser is returned if no user is found
-	ErrNoSuchUser = errors.New("auth error: no such user")
+	ErrNoSuchUser = errors.New("storage error: no such user")
 	// ErrUserExists is returned when trying to add user with existing username
-	ErrUserExists = errors.New("auth error: user already exists")
+	ErrUserExists = errors.New("storage error: user already exists")
 )
-
-// UserInfo represent information about user and stores user's
-// password hash
-type UserInfo struct {
-	UserName            string
-	PasswordHash        string
-	DateCreated         time.Time
-	DateChanged         time.Time
-	Lastlogin           time.Time
-	FailedLoginAttempts int
-	MustChangePassword  bool
-}
-
-func (u UserInfo) String() string {
-	return fmt.Sprintf("username:\t%v\nstored hash:\t%v\ncreated:\t%v\nchanged:\t%v\nlogged on:\t%v\nfailed:\t%v\nmustchange:\t%v\n", u.UserName, u.PasswordHash, u.DateCreated, u.DateChanged, u.Lastlogin, u.FailedLoginAttempts, u.MustChangePassword)
-}
-
-// UserInfoStorage is required to keep UserInfo
-// this can be either local file, a DB or any remote
-// storage. basicauth/jsonstorage contains simple implementation
-// with JSON file as storage
-type UserInfoStorage interface {
-	Get(username string) (UserInfo, error)
-	Put(UserInfo) error
-	Del(username string) error
-	Upd(UserInfo) error
-}
 
 // JSONPasswordKeeper holds user password hashes in memory
 // and saves them to disk on call to Close()
 // it implements UserInfoStorage
 type JSONPasswordKeeper struct {
-	userInfo map[string]UserInfo
+	userInfo map[string]basicauth.UserInfo
 	filename string
 	mutex    sync.Mutex
 }
@@ -55,7 +29,7 @@ type JSONPasswordKeeper struct {
 // OpenJSONPasswordKeeper accepts a filename containig usernames and password
 // hashes and returns in stance of JSONPasswordKeeper. Function returns an underlying
 // error if it fails to read from file or fails to Unmarshal its contents.
-func OpenJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
+func OpenJSONPasswordKeeper(filename string) (basicauth.UserInfoStorage, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return NewJSONPasswordKeeper(filename)
 	}
@@ -64,7 +38,7 @@ func OpenJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 		return nil, err
 	}
 	var pk JSONPasswordKeeper
-	pk.userInfo = make(map[string]UserInfo)
+	pk.userInfo = make(map[string]basicauth.UserInfo)
 	if err := json.Unmarshal(data, &pk.userInfo); err != nil {
 		return nil, err
 	}
@@ -75,7 +49,7 @@ func OpenJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 // NewJSONPasswordKeeper creates a new keeper and tries to save to disk.
 // Will return underlying error if it fails to write to designated file)
 // properly.
-func NewJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
+func NewJSONPasswordKeeper(filename string) (basicauth.UserInfoStorage, error) {
 	if filename == "" {
 		return nil, fmt.Errorf("empty filename provided. will do nothing")
 	}
@@ -83,13 +57,13 @@ func NewJSONPasswordKeeper(filename string) (*JSONPasswordKeeper, error) {
 		return nil, fmt.Errorf("error: file %v already exists", filename)
 	}
 	var pk JSONPasswordKeeper
-	pk.userInfo = make(map[string]UserInfo)
+	pk.userInfo = make(map[string]basicauth.UserInfo)
 	pk.filename = filename
 	return &pk, pk.flushToDisk()
 }
 
 // Put adds UseerInfo to storage
-func (pk *JSONPasswordKeeper) Put(userinfo UserInfo) error {
+func (pk *JSONPasswordKeeper) Put(userinfo basicauth.UserInfo) error {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
 	if _, exists := pk.userInfo[userinfo.UserName]; exists {
@@ -99,18 +73,18 @@ func (pk *JSONPasswordKeeper) Put(userinfo UserInfo) error {
 	return pk.flushToDisk()
 }
 
-// Get returns UserInfo if username is valid
-func (pk *JSONPasswordKeeper) Get(username string) (UserInfo, error) {
+// Get returns basicauth.UserInfo if username is valid
+func (pk *JSONPasswordKeeper) Get(username string) (basicauth.UserInfo, error) {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
 	userinfo, exists := pk.userInfo[username]
 	if !exists {
-		return UserInfo{}, ErrNoSuchUser
+		return basicauth.UserInfo{}, ErrNoSuchUser
 	}
 	return userinfo, nil
 }
 
-// Del deletes UserInfo is username is valid
+// Del deletes basicauth.UserInfo is username is valid
 func (pk *JSONPasswordKeeper) Del(username string) error {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
@@ -123,7 +97,7 @@ func (pk *JSONPasswordKeeper) Del(username string) error {
 
 // Upd finds if user with UserName as in supplied userinfo exists and
 // updates existing info for that user with supplied userinfo.
-func (pk *JSONPasswordKeeper) Upd(userinfo UserInfo) error {
+func (pk *JSONPasswordKeeper) Upd(userinfo basicauth.UserInfo) error {
 	pk.mutex.Lock()
 	defer pk.mutex.Unlock()
 	if _, ok := pk.userInfo[userinfo.UserName]; ok {
@@ -131,6 +105,11 @@ func (pk *JSONPasswordKeeper) Upd(userinfo UserInfo) error {
 		return pk.flushToDisk()
 	}
 	return ErrNoSuchUser
+}
+
+// Close implements basicauth UsrInfoStorage interface
+func (pk *JSONPasswordKeeper) Close() error {
+	return nil
 }
 
 func (pk *JSONPasswordKeeper) flushToDisk() error {

@@ -3,10 +3,12 @@ package basicauth
 import (
 	"fmt"
 	"testing"
+
+	"github.com/dmfed/basicauth/storage"
 )
 
 func TestExposedInterface(t *testing.T) {
-	st, err := OpenJSONPasswordKeeper("./test.json")
+	st, err := storage.OpenJSONPasswordKeeper("./test.json")
 	if err != nil {
 		fmt.Println("OpenJSONPasswordKeeper failed", err)
 		t.Fail()

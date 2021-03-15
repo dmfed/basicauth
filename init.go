@@ -1,8 +1,7 @@
 package basicauth
 
 var (
-	globalHasher  PasswordHasher
-	globalStorage UserInfoStorage
+	globalHasher PasswordHasher
 )
 
 func init() {
@@ -37,12 +36,5 @@ func init() {
 func RegisterHasher(h PasswordHasher) {
 	if h != nil && globalHasher == nil {
 		globalHasher = h
-	}
-}
-
-// RegisterStorage allows to set default to anything implementing UserInfoStorage
-func RegisterStorage(s UserInfoStorage) {
-	if s != nil && globalStorage == nil {
-		globalStorage = s
 	}
 }

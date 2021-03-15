@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	auth "github.com/dmfed/basicauth"
+	"github.com/dmfed/basicauth"
+	"github.com/dmfed/basicauth/storage"
 )
 
 func main() {
 	var (
-		flagFilename = flag.String("f", "", "storage file to use")
+		flagFilename = flag.String("f", "", "storage filename to use")
 		flagNew      = flag.Bool("new", false, "create new storage and quit (requires filename)")
 		flagAdd      = flag.Bool("adduser", false, "add user record")
 		flagDel      = flag.Bool("deluser", false, "delete user record")
@@ -27,21 +28,21 @@ func main() {
 	}
 
 	if *flagNew {
-		if _, err := auth.NewJSONPasswordKeeper(*flagFilename); err != nil {
+		if _, err := storage.NewJSONPasswordKeeper(*flagFilename); err != nil {
 			fmt.Println(err)
 			os.Exit(2)
 		}
 		return
 	}
 
-	storage, err := auth.OpenJSONPasswordKeeper(*flagFilename)
+	storage, err := storage.OpenJSONPasswordKeeper(*flagFilename)
 	if err != nil {
 		fmt.Printf("error opening password storage: %v", err)
 		os.Exit(2)
 	}
 	fmt.Println("Opened storage:", *flagFilename)
 
-	admin, err := auth.NewAdmin(storage)
+	admin, err := basicauth.NewAdminInterface(storage)
 	if err != nil {
 		fmt.Printf("error getting admin interface to storage: %v", err)
 		os.Exit(3)

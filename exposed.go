@@ -15,13 +15,17 @@ var (
 	ErrMustChangePassword = fmt.Errorf("default password \"%v\" is set for user. change password to be able to login. use \"%v\" as current password", defaultPassword, defaultPassword)
 )
 
-// ExposedInterface is an interface intended to be exposed to outside world
+// ExposedInterface is an interface intended to be exposed to outside world / client application
 // It requires current user password for any interaction.
+// It can only add/change/delete userinfo. For keepeing login sessions see
+// LoginManager interface
 type ExposedInterface interface {
 	CheckUserPassword(username string, password string) error
 	AddUser(username string, password string) error
 	ChangeUserPassword(username string, oldpassword string, newpassword string) error
 	DelUser(username string, password string) error
+	GetUserInfo(username, password string) (UserInfo, error)
+	UpdateUserInfo(username, password string, newinfo UserInfo) error
 }
 
 // Exposed holds ExposedInterface
@@ -110,4 +114,27 @@ func (ex *exposed) ChangeUserPassword(username string, oldpassword string, newpa
 	userinfo.PasswordHash = hash
 	userinfo.DateChanged = time.Now()
 	return ex.st.Upd(userinfo)
+}
+
+func (ex *exposed) GetUserInfo(username, password string) (userinfo UserInfo, err error) {
+	userinfo, err = ex.st.Get(username)
+	if err != nil {
+		return
+	}
+	if err := ex.hsr.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
+		return UserInfo{}, ErrInvalidPassword
+	}
+	return
+}
+
+func (ex *exposed) UpdateUserInfo(username, password string, newinfo UserInfo) error {
+	userinfo, err := ex.st.Get(username)
+	if err != nil {
+		return err
+	}
+	if err := ex.hsr.CheckUserPassword(userinfo.PasswordHash, password); err != nil {
+		return ErrInvalidPassword
+	}
+	// Doing nothing at this point. If UserInfo gets more fields - this method will be a must
+	return nil
 }

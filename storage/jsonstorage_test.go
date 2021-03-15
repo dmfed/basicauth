@@ -1,16 +1,18 @@
-package basicauth
+package storage
 
 import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/dmfed/basicauth"
 )
 
 var (
 	testUser        = "jimi"
 	testInvalidUser = "jamie"
 	testHash        = "xxxxFFFFgggg$"
-	testUserInfo    = UserInfo{UserName: testUser, PasswordHash: testHash}
+	testUserInfo    = basicauth.UserInfo{UserName: testUser, PasswordHash: testHash}
 	testFileName    = "test1234.json"
 )
 

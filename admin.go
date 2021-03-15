@@ -1,11 +1,17 @@
 package basicauth
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
 
 var defaultPassword = "none"
+
+var (
+	// ErrUserExists is returned when trying to add user with existing username
+	ErrUserExists = errors.New("auth error: user already exists")
+)
 
 // AdminInterface defines methods to add, delete and update user info
 // it does not require user password to perform where possible.
@@ -13,7 +19,7 @@ type AdminInterface interface {
 	AdminAddUser(username string) error //Change to return random password
 	AdminDelUser(username string) error
 	AdminGetUserInfo(username string) (UserInfo, error)
-	AdminUpdateUserInfo(UserInfo) error
+	AdminUpdUserInfo(UserInfo) error
 	AdminResetUserPassword(username string) error
 }
 
@@ -23,8 +29,8 @@ type admin struct {
 	PasswordHasher
 }
 
-// NewAdmin creates instance of Admin and returns AdminInterface
-func NewAdmin(st UserInfoStorage) (AdminInterface, error) {
+// NewAdminInterface creates instance of AdminInterface
+func NewAdminInterface(st UserInfoStorage) (AdminInterface, error) {
 	if st == nil {
 		return nil, fmt.Errorf("error: storage is nil")
 	}
@@ -55,7 +61,7 @@ func (ad *admin) AdminDelUser(username string) error {
 }
 
 // AdminUpdateUserInfo updates userinfo in underlying USerInfoStorage
-func (ad *admin) AdminUpdateUserInfo(userinfo UserInfo) error {
+func (ad *admin) AdminUpdUserInfo(userinfo UserInfo) error {
 	existing, err := ad.Get(userinfo.UserName)
 	if err != nil {
 		return err

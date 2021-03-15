@@ -13,14 +13,15 @@ const tokenEnvVar = "BASICAUTH_TOKEN"
 
 func main() {
 	var (
-		flagIPAddr = flag.String("ip", "127.0.0.1", "ip address to connect to")
-		flagPort   = flag.String("port", "8081", "port to listen on")
-		/* flagUserName      = flag.String("user", "", "username to operate with")
-		flagPassword      = flag.String("password", "", "password to operate with")
-		flagOldPassword   = flag.String("oldpassword", "", "old password if required to execute command")
-		flagAction        = flag.String("action", "", "action to perform") */
-		flagRequireSecure = flag.Bool("secure", false, "require TLS connection")
-		flagAppToken      = flag.String("token", "", "provide token via commandline")
+		flagIPAddr         = flag.String("ip", "127.0.0.1", "ip address to connect to")
+		flagPort           = flag.String("port", "8081", "port to listen on")
+		flagRequireSecure  = flag.Bool("secure", false, "require TLS connection")
+		flagAppToken       = flag.String("token", "", "provide token via commandline")
+		flagGetCommand     = flag.Bool("get", false, "get info for specified user")
+		flagAddUserCommand = flag.Bool("add", false, "add user")
+		flagDelUserCommand = flag.Bool("del", false, "delete user")
+		flagResetUserPass  = flag.Bool("reset", false, "reset password for specified user")
+		flagUserName       = flag.String("u", "", "username")
 	)
 	flag.Parse()
 	if *flagAppToken == "" {
@@ -31,9 +32,17 @@ func main() {
 		}
 	}
 
-	client, err := net.NewClient(*flagIPAddr, *flagPort, *flagAppToken, *flagRequireSecure)
+	client, err := net.NewAdminClient(*flagIPAddr, *flagPort, *flagAppToken, *flagRequireSecure)
 	if err != nil {
 		log.Printf("could not start auth client: %v", err)
 	}
-	fmt.Println(client.Login("dmitry", "hello"))
+	if *flagGetCommand {
+		fmt.Println(client.AdminGetUserInfo(*flagUserName))
+	} else if *flagAddUserCommand {
+		fmt.Println(client.AdminAddUser(*flagUserName))
+	} else if *flagResetUserPass {
+		fmt.Println(client.AdminResetUserPassword(*flagUserName))
+	} else if *flagDelUserCommand {
+		fmt.Println(client.AdminDelUser(*flagUserName))
+	}
 }
