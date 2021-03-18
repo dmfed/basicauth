@@ -1,6 +1,2 @@
-plainauthserver/plainauthserver
-client/authadmin/authadmin
-server/cmd/cmd
-jsonstorage/admin/admin
 net/authserver/authserver
 net/authclient/authclient
