@@ -24,7 +24,7 @@ var (
 // ip and port. The server can be lauched with ListenAndServe() or ListenAndServeTLS() methods
 // It is callers responsibility to gracefully shutdown server with Shutdown() not Close()
 // in order to disconnect from password keeper gracefully
-func NewLoginServer(st basicauth.UserInfoStorage, ip, port, admintoken string, requireTLS bool, apptokens ...string) (*http.Server, error) {
+func NewLoginServer(st basicauth.UserAccountStorage, ip, port, admintoken string, requireTLS bool, apptokens ...string) (*http.Server, error) {
 	if st == nil {
 		return nil, ErrStorageIsNil
 	}
@@ -42,7 +42,7 @@ func NewLoginServer(st basicauth.UserInfoStorage, ip, port, admintoken string, r
 	// below lines are intended to handle case when there is
 	// nobody to call call server.Shutdown() to exit gracefully
 	interrupts := make(chan os.Signal, 1)
-	signal.Notify(interrupts, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
+	signal.Notify(interrupts, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		sig := <-interrupts
 		log.Printf("authserver exiting on signal: %v", sig)
@@ -57,7 +57,7 @@ func NewLoginServer(st basicauth.UserInfoStorage, ip, port, admintoken string, r
 }
 
 type apihandler struct {
-	lm         basicauth.LoginManager
+	lm         basicauth.LoginInterface
 	admin      basicauth.AdminInterface
 	apptokens  map[string]bool // Can temporarily disable tokens
 	admintoken string
@@ -65,17 +65,17 @@ type apihandler struct {
 
 func (h *apihandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "405 Method not allowed", 405)
+		http.Error(w, "405 Method not allowed", http.StatusMethodNotAllowed)
 	}
 	bodydata, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "400 could not read request body", 400)
+		http.Error(w, "400 could not read request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 	var msg Message
 	if err := msg.FromBytes(bodydata); err != nil {
-		http.Error(w, "400 could not parse JSON from request body", 400)
+		http.Error(w, "400 could not parse JSON from request body", http.StatusBadRequest)
 		return
 	}
 	if strings.HasPrefix(msg.Request.Action, "admin") && h.admintoken != "" && msg.AppToken == h.admintoken {
@@ -85,11 +85,11 @@ func (h *apihandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		msg = h.processRegularCommand(msg)
 	} else {
 		log.Printf("error: got invalid app token %v from X-FWD: %v Addr: %v", msg.AppToken, r.Header.Get("X-FORWARDED-FOR"), r.RemoteAddr)
-		http.Error(w, "403 Forbidden", 403)
+		http.Error(w, "403 Forbidden", http.StatusForbidden)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write(msg.ToBytes())
 }
 
@@ -135,25 +135,25 @@ func (h *apihandler) processRegularCommand(msg Message) Message {
 func (h *apihandler) processAdminCommand(msg Message) Message {
 	msg.Response = Response{ID: msg.Request.ID}
 	switch msg.Request.Action {
-	case "admingetuserinfo":
-		userinfo, err := h.admin.AdminGetUserInfo(msg.Request.UserName)
+	case "admingetuseraccount":
+		account, err := h.admin.AdminGetAccount(msg.Request.UserName)
 		msg = appendErrorOKtoMessage(msg, err)
-		msg.Response.UserInfo = userinfo
+		msg.Response.Account = account
 
-	case "adminupdateuserinfo":
-		err := h.admin.AdminUpdUserInfo(msg.Request.UserInfo)
-		msg = appendErrorOKtoMessage(msg, err)
-
-	case "adminadduser":
-		err := h.admin.AdminAddUser(msg.Request.UserName)
+	case "adminupdateaccount":
+		err := h.admin.AdminUpdAccount(msg.Request.Account)
 		msg = appendErrorOKtoMessage(msg, err)
 
-	case "admindeluser":
-		err := h.admin.AdminDelUser(msg.Request.UserName)
+	case "adminaddaccount":
+		err := h.admin.AdminAddAccount(msg.Request.UserName)
+		msg = appendErrorOKtoMessage(msg, err)
+
+	case "admindelaccount":
+		err := h.admin.AdminDelAccount(msg.Request.UserName)
 		msg = appendErrorOKtoMessage(msg, err)
 
 	case "adminresetuserpassword":
-		err := h.lm.CheckUserPassword(msg.Request.UserName, msg.Request.Password)
+		err := h.admin.AdminResetUserPassword(msg.Request.UserName)
 		msg = appendErrorOKtoMessage(msg, err)
 
 	case "adminaddapptoken":
@@ -177,11 +177,11 @@ func (h *apihandler) processAdminCommand(msg Message) Message {
 			msg.Response.Error = "token not found"
 			msg.Response.OK = false
 		}
-
 	case "adminreplaceadmintoken":
 		h.admintoken = msg.Request.Token
 	default:
 		msg.Response.OK = false
+		msg.Response.Error = "unknown command supplied"
 	}
 	msg.Request = Request{}
 	return msg

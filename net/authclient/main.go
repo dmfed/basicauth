@@ -32,17 +32,17 @@ func main() {
 		}
 	}
 
-	client, err := net.NewAdminClient(*flagIPAddr, *flagPort, *flagAppToken, *flagRequireSecure)
+	client, err := net.NewRemoteAdminInterface(*flagIPAddr, *flagPort, *flagAppToken, *flagRequireSecure)
 	if err != nil {
 		log.Printf("could not start auth client: %v", err)
 	}
 	if *flagGetCommand {
-		fmt.Println(client.AdminGetUserInfo(*flagUserName))
+		fmt.Println(client.AdminGetAccount(*flagUserName))
 	} else if *flagAddUserCommand {
-		fmt.Println(client.AdminAddUser(*flagUserName))
+		fmt.Println(client.AdminAddAccount(*flagUserName))
 	} else if *flagResetUserPass {
 		fmt.Println(client.AdminResetUserPassword(*flagUserName))
 	} else if *flagDelUserCommand {
-		fmt.Println(client.AdminDelUser(*flagUserName))
+		fmt.Println(client.AdminDelAccount(*flagUserName))
 	}
 }

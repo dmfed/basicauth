@@ -32,6 +32,7 @@ func main() {
 			fmt.Println(err)
 			os.Exit(2)
 		}
+		fmt.Printf("File storage created: %v", *flagFilename)
 		return
 	}
 
@@ -50,7 +51,7 @@ func main() {
 
 	if *flagFind && *flagUsername != "" {
 		fmt.Printf("Lookup for user: %v\n", *flagUsername)
-		userinfo, err := admin.AdminGetUserInfo(*flagUsername)
+		userinfo, err := admin.AdminGetAccount(*flagUsername)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -61,7 +62,7 @@ func main() {
 
 	if *flagAdd && *flagUsername != "" && *flagPassword != "" {
 		fmt.Printf("Adding user: %v\n", *flagUsername)
-		if err := admin.AdminAddUser(*flagUsername); err != nil {
+		if err := admin.AdminAddAccount(*flagUsername); err != nil {
 			fmt.Println(err)
 			os.Exit(3)
 		}
@@ -78,13 +79,12 @@ func main() {
 	}
 
 	if *flagDel && *flagUsername != "" {
-		if err := admin.AdminDelUser(*flagUsername); err != nil {
+		if err := admin.AdminDelAccount(*flagUsername); err != nil {
 			fmt.Println(err)
 			os.Exit(3)
 		}
 		fmt.Printf("deleted user %v", *flagUsername)
 		return
 	}
-
 	fmt.Printf("not enough parameters provided. see %v --help", os.Args[0])
 }

@@ -15,11 +15,11 @@ type authClient struct {
 	secure   bool
 }
 
-func NewAuthClient(ip, port, apptoken string, requireTLS bool) (basicauth.LoginManager, error) {
+func NewLoginClient(ip, port, apptoken string, requireTLS bool) (basicauth.LoginInterface, error) {
 	var ac authClient
 	ac.ipAddr = "http://" + ip + ":" + port
 	ac.appToken = apptoken
-	ac.secure = requireTLS
+	ac.secure = requireTLS // TODO
 	return &ac, nil
 }
 

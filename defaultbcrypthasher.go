@@ -10,7 +10,7 @@ const bcryptCost = 0 // will force bcrypt to use default cost
 // hashes against passwords
 type PasswordHasher interface {
 	// CheckUserPassword must return nil if hash and password match
-	CheckUserPassword(hash string, password string) error
+	CompareUserPasswordWithHash(hash string, password string) error
 	// HashPassword takes password as string and returns hash
 	HashPassword(password string) (hash string, err error)
 }
@@ -22,6 +22,6 @@ func (h *defaultBcryptHasher) HashPassword(password string) (string, error) {
 	return string(hashbytes), err
 }
 
-func (h *defaultBcryptHasher) CheckUserPassword(hash string, password string) error {
+func (h *defaultBcryptHasher) CompareUserPasswordWithHash(hash string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }

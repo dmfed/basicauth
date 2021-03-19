@@ -14,7 +14,7 @@ func TestExposedInterface(t *testing.T) {
 		fmt.Println("OpenJSONPasswordKeeper failed", err)
 		t.Fail()
 	}
-	ex, err := basicauth.NewExposedInterface(st)
+	ex, err := basicauth.NewAppInterface(st)
 	if err != nil {
 		fmt.Println("OpenJSONPasswordKeeper failed", err)
 		t.Fail()

@@ -38,3 +38,7 @@ func RegisterHasher(h PasswordHasher) {
 		globalHasher = h
 	}
 }
+
+func RegisterStorage(st UserAccountStorage) {
+
+}

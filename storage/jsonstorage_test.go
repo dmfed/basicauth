@@ -12,20 +12,20 @@ var (
 	testUser        = "jimi"
 	testInvalidUser = "jamie"
 	testHash        = "xxxxFFFFgggg$"
-	testUserInfo    = basicauth.UserInfo{UserName: testUser, PasswordHash: testHash}
+	testUserInfo    = basicauth.Account{UserName: testUser, PasswordHash: testHash}
 	testFileName    = "test1234.json"
 )
 
 var sampleContent = []byte(fmt.Sprintf(`{
     "%s": {
         "UserName": "%s",
-        "PasswordHash": "%s",
+		"PasswordHash": "%s",
         "DateCreated": "2021-03-08T02:26:57.081387+03:00",
         "DateChanged": "2021-03-08T02:26:57.081387+03:00",
         "Lastlogin": "0001-01-01T00:00:00Z",
         "FailedLoginAttempts": 0,
         "MustChangePassword": false
-    }
+    },
 }`, testUser, testUser, testHash))
 
 func init() {

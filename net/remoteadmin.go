@@ -23,7 +23,7 @@ type AuthAdmin struct {
 // NewAdminClient returns basicauth.AdminInterface with two methods added
 // It implements AdminAddAppToken(token string) and AdminReplaceAdminToken(token string)
 // These methods are used to remotely change valid tokens for connecting apps.
-func NewAdminClient(ip, port, admintoken string, secure bool) (*AuthAdmin, error) {
+func NewRemoteAdminInterface(ip, port, admintoken string, secure bool) (basicauth.AdminInterface, error) {
 	var aa AuthAdmin
 	aa.ipAddr = "http://" + ip + ":" + port
 	aa.adminToken = admintoken
@@ -31,37 +31,37 @@ func NewAdminClient(ip, port, admintoken string, secure bool) (*AuthAdmin, error
 	return &aa, nil
 }
 
-func (aa *AuthAdmin) AdminGetUserInfo(username string) (basicauth.UserInfo, error) {
+func (aa *AuthAdmin) AdminGetAccount(username string) (basicauth.Account, error) {
 	m := aa.messageTemplate()
-	m.Request.Action = "admingetuserinfo"
+	m.Request.Action = "adminupdateaccount"
 	m.Request.UserName = username
 	m, err := aa.post(m)
 	if err != nil {
-		return m.Response.UserInfo, err
+		return m.Response.Account, err
 	}
 	if !m.Response.OK {
-		return m.Response.UserInfo, fmt.Errorf("could not get user info for user %v: %v", username, m.Response.Error)
+		return m.Response.Account, fmt.Errorf("could not get user info for user %v: %v", username, m.Response.Error)
 	}
-	return m.Response.UserInfo, nil
+	return m.Response.Account, nil
 }
 
-func (aa *AuthAdmin) AdminUpdUserInfo(userinfo basicauth.UserInfo) error {
+func (aa *AuthAdmin) AdminUpdAccount(account basicauth.Account) error {
 	m := aa.messageTemplate()
 	m.Request.Action = "adminupdateuserinfo"
-	m.Request.UserInfo = userinfo
+	m.Request.Account = account
 	m, err := aa.post(m)
 	if err != nil {
 		return err
 	}
 	if !m.Response.OK {
-		return fmt.Errorf("could not update user info for user %v: %v", userinfo.UserName, m.Response.Error)
+		return fmt.Errorf("could not update user info for user %v: %v", account.UserName, m.Response.Error)
 	}
 	return nil
 }
 
 func (aa *AuthAdmin) AdminResetUserPassword(username string) error {
 	m := aa.messageTemplate()
-	m.Request.Action = "adminresetuserinfo"
+	m.Request.Action = "adminresetuserpassword"
 	m.Request.UserName = username
 	m, err := aa.post(m)
 	if err != nil {
@@ -73,9 +73,9 @@ func (aa *AuthAdmin) AdminResetUserPassword(username string) error {
 	return nil
 }
 
-func (aa *AuthAdmin) AdminAddUser(username string) (err error) {
+func (aa *AuthAdmin) AdminAddAccount(username string) (err error) {
 	m := aa.messageTemplate()
-	m.Request.Action = "adminadduser"
+	m.Request.Action = "adminaddaccount"
 	m.Request.UserName = username
 	m, err = aa.post(m)
 	if err != nil {
@@ -87,9 +87,9 @@ func (aa *AuthAdmin) AdminAddUser(username string) (err error) {
 	return nil
 }
 
-func (aa *AuthAdmin) AdminDelUser(username string) error {
+func (aa *AuthAdmin) AdminDelAccount(username string) error {
 	m := aa.messageTemplate()
-	m.Request.Action = "admindeluser"
+	m.Request.Action = "admindelaccount"
 	m.Request.UserName = username
 	m, err := aa.post(m)
 	if err != nil {

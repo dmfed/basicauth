@@ -15,6 +15,7 @@ type Request struct {
 	Password    string             `json:",omitempty"`
 	NewPassword string             `json:",omitempty"`
 	UserInfo    basicauth.UserInfo `json:",omitempty"`
+	Account     basicauth.Account  `json:",omitempty"`
 }
 
 // Response represents response of auth server
@@ -24,6 +25,7 @@ type Response struct {
 	Error    string             `json:",omitempty"`
 	Token    string             `json:",omitempty"`
 	UserInfo basicauth.UserInfo `json:",omitempty"`
+	Account  basicauth.Account  `json:",omitempty"`
 }
 
 // Message type is a basic transfer unit for Requests and Responses
