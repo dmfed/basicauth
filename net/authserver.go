@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/dmfed/basicauth"
 )
@@ -28,7 +29,7 @@ func NewLoginServer(st basicauth.UserAccountStorage, ip, port, admintoken string
 	if st == nil {
 		return nil, ErrStorageIsNil
 	}
-	logmgr, _ := basicauth.NewLoginManager(st)
+	logmgr, _ := basicauth.NewLoginManager(st, time.Hour*24)
 	admin, _ := basicauth.NewAdminInterface(st)
 	var lh apihandler
 	lh.lm = logmgr
@@ -59,7 +60,7 @@ func NewLoginServer(st basicauth.UserAccountStorage, ip, port, admintoken string
 type apihandler struct {
 	lm         basicauth.LoginInterface
 	admin      basicauth.AdminInterface
-	apptokens  map[string]bool // Can temporarily disable tokens
+	apptokens  map[string]bool
 	admintoken string
 }
 
@@ -179,6 +180,7 @@ func (h *apihandler) processAdminCommand(msg Message) Message {
 		}
 	case "adminreplaceadmintoken":
 		h.admintoken = msg.Request.Token
+		msg.Response.OK = true
 	default:
 		msg.Response.OK = false
 		msg.Response.Error = "unknown command supplied"

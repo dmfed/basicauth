@@ -25,12 +25,12 @@ type logininterface struct {
 }
 
 // NewLoginManager return instance of LoginManager interface
-func NewLoginManager(st UserAccountStorage) (LoginInterface, error) {
+func NewLoginManager(st UserAccountStorage, sessionDuration time.Duration) (LoginInterface, error) {
 	if st == nil {
 		return nil, fmt.Errorf("failed to instantiate LoginManager: ex is nil")
 	}
 	app, _ := NewAppInterface(st)
-	tk, _ := NewMemTokenKeeper(time.Hour * 24)
+	tk, _ := NewMemTokenKeeper(sessionDuration)
 	return &logininterface{app, tk}, nil
 }
 

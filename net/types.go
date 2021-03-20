@@ -23,6 +23,7 @@ type Response struct {
 	ID       string             `json:",omitempty"`
 	OK       bool               `json:",omitempty"`
 	Error    string             `json:",omitempty"`
+	Message  string             `json:",omitempty"`
 	Token    string             `json:",omitempty"`
 	UserInfo basicauth.UserInfo `json:",omitempty"`
 	Account  basicauth.Account  `json:",omitempty"`

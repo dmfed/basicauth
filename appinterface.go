@@ -125,6 +125,7 @@ func (app *appinterface) ChangeUserPassword(username string, oldpassword string,
 	}
 	account.PasswordHash = hash
 	account.DateChanged = time.Now()
+	account.MustChangePassword = false
 	return app.Upd(account)
 }
 

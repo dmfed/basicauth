@@ -62,7 +62,7 @@ func (ac *authClient) CheckUserLoggedIn(username, token string) error {
 		return err
 	}
 	if !m.Response.OK {
-		return fmt.Errorf("could check session for user %v: %v", username, m.Response.Error)
+		return fmt.Errorf("could not comnfirm user %v status: %v", username, m.Response.Error)
 	}
 	return nil
 }

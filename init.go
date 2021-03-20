@@ -26,7 +26,7 @@ func init() {
 //
 //
 // import (
-//		_ "path/to/yourpackage" // this will seth basicauth's hasher
+//		_ "path/to/yourpackage" // this will set basicauth's hasher to use your package
 //		"github.com/dmfed/basicauth"
 // )
 // This way the init() in your custom package will override
@@ -37,8 +37,4 @@ func RegisterHasher(h PasswordHasher) {
 	if h != nil && globalHasher == nil {
 		globalHasher = h
 	}
-}
-
-func RegisterStorage(st UserAccountStorage) {
-
 }
