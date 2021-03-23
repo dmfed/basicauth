@@ -18,7 +18,6 @@ func main() {
 		flagUpdate   = flag.Bool("resetpwd", false, "reset user password")
 		flagFind     = flag.Bool("show", false, "display user info in the storage")
 		flagUsername = flag.String("u", "", "username to add/delete/update/find")
-		flagPassword = flag.String("p", "", "password of user (if required)")
 	)
 	flag.Parse()
 
@@ -60,7 +59,7 @@ func main() {
 		return
 	}
 
-	if *flagAdd && *flagUsername != "" && *flagPassword != "" {
+	if *flagAdd && *flagUsername != "" {
 		fmt.Printf("Adding user: %v\n", *flagUsername)
 		if err := admin.AdminAddAccount(*flagUsername); err != nil {
 			fmt.Println(err)
@@ -70,7 +69,7 @@ func main() {
 		return
 	}
 
-	if *flagUpdate && *flagUsername != "" && *flagPassword != "" {
+	if *flagUpdate && *flagUsername != "" {
 		if err := admin.AdminResetUserPassword(*flagUsername); err != nil {
 			fmt.Println(err)
 			os.Exit(3)

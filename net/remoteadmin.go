@@ -33,7 +33,7 @@ func NewRemoteAdminInterface(ip, port, admintoken string, secure bool) (basicaut
 
 func (aa *AuthAdmin) AdminGetAccount(username string) (basicauth.Account, error) {
 	m := aa.messageTemplate()
-	m.Request.Action = "adminupdateaccount"
+	m.Request.Action = "admingetaccount"
 	m.Request.UserName = username
 	m, err := aa.post(m)
 	if err != nil {
@@ -47,7 +47,7 @@ func (aa *AuthAdmin) AdminGetAccount(username string) (basicauth.Account, error)
 
 func (aa *AuthAdmin) AdminUpdAccount(account basicauth.Account) error {
 	m := aa.messageTemplate()
-	m.Request.Action = "adminupdateuserinfo"
+	m.Request.Action = "adminupdateaccount"
 	m.Request.Account = account
 	m, err := aa.post(m)
 	if err != nil {
@@ -157,20 +157,24 @@ func (aa *AuthAdmin) AdminReplaceAdminToken(token string) error {
 	return nil
 }
 
-func (aa *AuthAdmin) post(inpmessage Message) (m Message, err error) {
+func (aa *AuthAdmin) post(inpmessage Message) (Message, error) {
+	var m Message
 	resp, err := http.Post(aa.ipAddr, "application/json", bytes.NewReader(inpmessage.ToBytes()))
 	if err != nil {
-		return
+		return m, err
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return m, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return m, fmt.Errorf("server returned: %v", string(data))
 	}
 	if err = m.FromBytes(data); err != nil {
-		return
+		return m, err
 	}
-	return
+	return m, nil
 }
 
 func (aa *AuthAdmin) messageTemplate() Message {

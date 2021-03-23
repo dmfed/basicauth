@@ -2,4 +2,6 @@ module github.com/dmfed/basicauth
 
 go 1.16
 
-require golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+require (
+	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670
+)

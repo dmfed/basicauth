@@ -136,7 +136,7 @@ func (h *apihandler) processRegularCommand(msg Message) Message {
 func (h *apihandler) processAdminCommand(msg Message) Message {
 	msg.Response = Response{ID: msg.Request.ID}
 	switch msg.Request.Action {
-	case "admingetuseraccount":
+	case "admingetaccount":
 		account, err := h.admin.AdminGetAccount(msg.Request.UserName)
 		msg = appendErrorOKtoMessage(msg, err)
 		msg.Response.Account = account

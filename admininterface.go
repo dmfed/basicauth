@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-var defaultPassword = "none"
-
 // AdminInterface defines methods to add, delete and update user info
 // it does not require user password to perform where possible.
 type AdminInterface interface {
@@ -41,12 +39,8 @@ func (ad *admininterface) AdminAddAccount(username string) error {
 	if _, err := ad.Get(username); err == nil {
 		return ErrUserExists
 	}
-	hash, err := ad.HashPassword(defaultPassword)
-	if err != nil {
-		return err
-	}
 	t := time.Now()
-	return ad.Put(Account{UserName: username, PasswordHash: hash, DateCreated: t, DateChanged: t, MustChangePassword: true}) // TODO
+	return ad.Put(Account{UserName: username, DateCreated: t, DateChanged: t, MustChangePassword: true})
 }
 
 // AdminDelUser deletes user
@@ -66,14 +60,11 @@ func (ad *admininterface) AdminUpdAccount(account Account) error {
 
 // AdminUpdateUserPassword updates user's password hash in underlying storage
 func (ad *admininterface) AdminResetUserPassword(username string) error {
-	userinfo, err := ad.Get(username)
+	account, err := ad.Get(username)
 	if err != nil {
 		return err
 	}
-	newhash, err := ad.HashPassword(defaultPassword)
-	if err != nil {
-		return err
-	}
-	userinfo.PasswordHash = newhash
-	return ad.Upd(userinfo)
+	account.PasswordHash = ""
+	account.MustChangePassword = true
+	return ad.Upd(account)
 }
