@@ -10,17 +10,32 @@ import (
 )
 
 type authClient struct {
+	schema   string
 	ipAddr   string
 	appToken string
 	secure   bool
 }
 
-func NewLoginClient(ip, port, apptoken string, requireTLS bool) (basicauth.LoginInterface, error) {
+func NewRemoteAppInterface(ip, port, apptoken string, requireTLS bool) (basicauth.AppInterface, error) {
+	return getAC(ip, port, apptoken, requireTLS), nil
+}
+
+func NewRemodeLoginInterface(ip, port, apptoken string, requireTLS bool) (basicauth.LoginInterface, error) {
+	return getAC(ip, port, apptoken, requireTLS), nil
+}
+
+func getAC(ip, port, apptoken string, requireTLS bool) *authClient {
 	var ac authClient
-	ac.ipAddr = "http://" + ip + ":" + port
+	switch requireTLS {
+	case true:
+		ac.schema = "https://"
+	default:
+		ac.schema = "http://"
+	}
+	ac.ipAddr = ip + ":" + port
 	ac.appToken = apptoken
 	ac.secure = requireTLS // TODO
-	return &ac, nil
+	return &ac
 }
 
 func (ac *authClient) Login(username, password string) (token string, err error) {
@@ -159,7 +174,7 @@ func (ac *authClient) UpdateUserInfo(username, password string, newinfo basicaut
 }
 
 func (ac *authClient) post(inpmessage Message) (m Message, err error) {
-	resp, err := http.Post(ac.ipAddr, "application/json", bytes.NewReader(inpmessage.ToBytes()))
+	resp, err := http.Post(ac.schema+ac.ipAddr, "application/json", bytes.NewReader(inpmessage.ToBytes()))
 	if err != nil {
 		return
 	}
