@@ -126,6 +126,13 @@ func (h *apihandler) processRegularCommand(msg Message) Message {
 	case "changeuserpassword":
 		err := h.lm.ChangeUserPassword(msg.Request.UserName, msg.Request.Password, msg.Request.NewPassword)
 		msg = appendErrorOKtoMessage(msg, err)
+	case "getuserinfo":
+		info, err := h.lm.GetUserInfo(msg.Request.UserName, msg.Request.Password)
+		msg.Response.UserInfo = info
+		msg = appendErrorOKtoMessage(msg, err)
+	case "updateuserinfo":
+		err := h.lm.UpdateUserInfo(msg.Request.UserName, msg.Request.Password, msg.Request.UserInfo)
+		msg = appendErrorOKtoMessage(msg, err)
 	default:
 		msg.Response.OK = false
 	}
