@@ -10,6 +10,7 @@ import (
 )
 
 func TestExposedInterface(t *testing.T) {
+	fmt.Println("Testing AppIiterface...")
 	filename := "./test.json"
 	st, err := storage.NewJSONPasswordKeeper(filename)
 	if err != nil {

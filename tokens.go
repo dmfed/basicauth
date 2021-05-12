@@ -43,7 +43,7 @@ func (tk *memSessionTokenKeeper) NewUserToken(username string) (token string, er
 	h := sha256.New()
 	h.Write([]byte(username))
 	h.Write([]byte(time.Now().String()))
-	token = string(fmt.Sprintf("%x", h.Sum(nil)))
+	token = fmt.Sprintf("%x", h.Sum(nil))
 	tk.mutex.Lock()
 	defer tk.mutex.Unlock()
 	tk.userTokens[username] = token

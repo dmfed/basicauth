@@ -8,6 +8,8 @@ import (
 	"github.com/dmfed/basicauth"
 )
 
+// Some very basic tests of JSON storage functionality
+
 var (
 	testUser        = "jimi"
 	testInvalidUser = "jamie"
